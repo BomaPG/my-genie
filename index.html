@@ -1845,22 +1845,11 @@ function proceedFromCV() {
     showPopup('Please upload your CV or paste your CV text before continuing.');
     return;
   }
-  // If roles were already extracted by AI on upload, go straight to confirmation
-  // If they pasted text manually (no upload), we need to run extraction now
-  if (state.cvRoles.length > 0) {
-    goToStep('4c');
-  } else {
-    // Pasted text path — extract via AI then go to confirmation
-    const status = document.getElementById('cv-parse-status');
-    status.style.display = 'block';
-    status.style.color   = '#7a7669';
-    status.textContent   = 'Scanning your CV for roles…';
-    extractRolesViaAI(cvText).then(roles => {
-      state.cvRoles = roles;
-      status.style.display = 'none';
-      goToStep('4c');
-    });
+  // If no roles extracted yet (paste path), parse locally now
+  if (!state.cvRoles.length) {
+    state.cvRoles = parseRolesFromText(cvText);
   }
+  goToStep('4c');
 }
 
 function showRoleConfirmationScreen() {
@@ -1958,31 +1947,63 @@ async function handleCVFile(event) {
 
     if (!extractedText.trim()) throw new Error('empty');
 
-    // Store the full text for the AI prompt later
+    // Store the full CV text
     document.getElementById('cv-text').value = extractedText;
 
-    status.textContent = 'Scanning for roles…';
+    // Parse roles directly from the text — no AI needed for this step
+    const roles = parseRolesFromText(extractedText);
+    state.cvRoles = roles;
 
-    // Use AI to extract roles cleanly
-    const roles = await extractRolesViaAI(extractedText);
-
-    if (roles && roles.length) {
-      state.cvRoles = roles;
-      status.textContent = `✓ Found ${roles.length} role${roles.length > 1 ? 's' : ''}. Continue to confirm them.`;
-      status.style.color = '#2e7d32';
-    } else {
-      status.textContent = '✓ CV loaded. You\'ll confirm your roles on the next screen.';
-      status.style.color = '#2e7d32';
-      state.cvRoles = [];
-    }
+    status.textContent = roles.length
+      ? `✓ Found ${roles.length} role${roles.length > 1 ? 's' : ''}. Continue to confirm them.`
+      : '✓ CV loaded. You\'ll add your roles on the next screen.';
+    status.style.color = '#2e7d32';
 
   } catch (err) {
-    console.error(err);
+    console.error('CV upload error:', err);
     status.textContent = 'Could not read this file. Try the "Paste instead" option below.';
     status.style.color = '#c0392b';
     zone.classList.remove('has-file');
     label.textContent = 'Click to upload your CV';
   }
+}
+
+// Parse roles from CV text by looking for lines followed by bullet points
+function parseRolesFromText(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const roles = [];
+  const bulletPattern = /^[•\-\*·▪]/;
+  const skipPattern = /^(education|work experience|experience|skills|achievements|summary|certifications|additional|languages|interests|profile|references|projects|@|http|linkedin|\d{4})/i;
+  const datePattern = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|june|july|august|september|october|november|december)\b|\b\d{4}\b/i;
+
+  for (let i = 0; i < lines.length - 1; i++) {
+    const line    = lines[i];
+    const next    = lines[i + 1] || '';
+    const nextnext = lines[i + 2] || '';
+
+    // Skip section headings, bullets, short lines, lines that are just dates
+    if (skipPattern.test(line)) continue;
+    if (bulletPattern.test(line)) continue;
+    if (line.length < 5 || line.length > 90) continue;
+
+    // A role line is typically followed by a bullet point within the next 2 lines
+    const nextIsBullet = bulletPattern.test(next) || bulletPattern.test(nextnext);
+    // Or the line contains a job-title word
+    const hasRoleWord = /\b(manager|analyst|consultant|associate|director|officer|coordinator|specialist|executive|lead|head|intern|engineer|advisor|founder|partner|assistant)\b/i.test(line);
+
+    if (nextIsBullet || hasRoleWord) {
+      // Clean trailing dates from the line
+      const clean = line.replace(/\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\s,]+\d{4}.*/i, '')
+                        .replace(/\s+\d{4}\s*[-–—].*$/, '')
+                        .replace(/\s+[-–—]\s+\d{4}.*$/, '')
+                        .trim();
+      if (clean.length > 4 && !datePattern.test(clean.replace(/[a-z]/gi, ''))) {
+        roles.push(clean);
+      }
+    }
+  }
+
+  return [...new Set(roles)].slice(0, 10);
 }
 
 async function extractRolesViaAI(cvText) {
