@@ -1919,32 +1919,61 @@ const SKILLS_QUESTIONS = {
 
 function extractRolesForDropdown() {
   const roles = [];
+
   if (state.path === 'has-cv') {
     const cvText = document.getElementById('cv-text')?.value || '';
-    // Extract role+company lines from CV text using common patterns
-    const lines = cvText.split('\n');
-    lines.forEach(line => {
-      line = line.trim();
-      // Look for lines that look like "Job Title, Company" or "Job Title at Company"
-      if (line.length > 5 && line.length < 80 &&
-          !line.match(/^[-•*]/) &&
-          !line.match(/^\d{4}/) &&
-          !line.match(/^(education|experience|skills|achievements|summary|certifications|additional)/i) &&
-          (line.match(/,\s*[A-Z]/) || line.match(/ at | — | - [A-Z]/))) {
-        roles.push(line.replace(/\s+\d{4}.*$/, '').trim());
+    const lines  = cvText.split('\n');
+
+    // Multiple strategies to catch job title lines from various CV formats
+    lines.forEach((raw, idx) => {
+      const line = raw.trim();
+      if (!line || line.length < 4 || line.length > 100) return;
+
+      // Skip section headings and bullet points
+      if (line.match(/^(education|work experience|experience|skills|achievements|summary|certifications|additional|languages|interests|profile|references|publications|projects)/i)) return;
+      if (line.match(/^[-•*·▪]/)) return;
+      if (line.match(/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i)) return;
+
+      const isCandidate =
+        // "Job Title, Company Name"
+        line.match(/^[A-Z][a-zA-Z\s\/\-&]+,\s+[A-Z]/) ||
+        // "Job Title — Company" or "Job Title - Company"
+        line.match(/^[A-Z][a-zA-Z\s\/\-&]+\s+[—–-]\s+[A-Z]/) ||
+        // Lines that contain known role keywords
+        line.match(/\b(manager|analyst|consultant|associate|director|officer|coordinator|specialist|executive|lead|head|intern|engineer|advisor|officer|founder|partner)\b/i) ||
+        // "Job Title at Company"
+        line.match(/\bat\b.{3,30}(ltd|limited|plc|inc|llc|group|bank|firm|agency|studio|foundation|enterprise|africa|nigeria|global)/i);
+
+      // Skip lines that are mostly numbers or dates
+      if (line.match(/\d{4}\s*[-–]\s*(\d{4}|present)/i)) return;
+      // Skip lines that look like addresses or emails
+      if (line.match(/@|www\.|http|linkedin/i)) return;
+
+      if (isCandidate) {
+        // Clean up trailing dates like "Feb 2022 – Present"
+        const clean = line
+          .replace(/\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\s,]+\d{4}.*/i, '')
+          .replace(/\s+\d{4}\s*[-–].*$/, '')
+          .trim();
+        if (clean.length > 4) roles.push(clean);
       }
     });
+
   } else {
-    const r1 = document.getElementById('r1-title')?.value.trim();
-    const r2 = document.getElementById('r2-title')?.value.trim();
-    const r3 = document.getElementById('r3-title')?.value.trim();
-    if (r1) roles.push(r1);
-    if (r2) roles.push(r2);
-    if (r3) roles.push(r3);
+    // No-CV path: use what they typed
+    ['r1-title', 'r2-title', 'r3-title'].forEach(id => {
+      const val = document.getElementById(id)?.value.trim();
+      if (val) roles.push(val);
+    });
   }
-  // Deduplicate and limit
-  state.cvRoles = [...new Set(roles)].slice(0, 8);
-  if (!state.cvRoles.length) state.cvRoles = ['My most recent role', 'A previous role'];
+
+  // Deduplicate, limit to 10
+  state.cvRoles = [...new Set(roles)].slice(0, 10);
+
+  // Always have at least a fallback so the dropdown isn't empty
+  if (!state.cvRoles.length) {
+    state.cvRoles = ['My most recent role', 'A previous role'];
+  }
 }
 
 function loadSkillsQuestions() {
