@@ -2805,6 +2805,9 @@ function parseAndRender(text) {
   const { firstName, lastName, email, phone } = state.user;
   const fullName = `${firstName} ${lastName}`.trim();
 
+  // Always log full response for debugging
+  console.log('=== FULL AI RESPONSE ===\n', text);
+
   // Header
   document.getElementById('out-name').textContent = fullName.toUpperCase();
   const contactParts = [email, phone].filter(Boolean);
@@ -2813,60 +2816,66 @@ function parseAndRender(text) {
   document.getElementById('cl-contact').textContent = contactParts.join('  ·  ');
   document.getElementById('output-greeting').textContent = `Here's your CV, ${firstName}.`;
 
-  // ── Cleanly split text into sections using the new labels ──
-  // Find positions of each major section label
-  const sectionStarts = {
-    summary:        findSection(text, 'SUMMARY:'),
-    work_exp:       findSection(text, 'WORK_EXPERIENCE:'),
-    education:      findSection(text, 'EDUCATION:'),
-    achievements:   findSection(text, 'ACHIEVEMENTS:'),
-    cover_letter:   findSection(text, 'COVER_LETTER:'),
-  };
-
-  function findSection(t, label) {
-    const idx = t.indexOf(label);
-    return idx === -1 ? null : idx + label.length;
-  }
-
-  function extractSection(t, startLabel, ...endLabels) {
-    const start = findSection(t, startLabel);
-    if (start === null) return '';
+  // ── Flexible section finder — works regardless of spacing/case ──
+  function getSection(t, startLabel, ...stopLabels) {
+    // Try exact match first, then case-insensitive
+    let idx = t.indexOf(startLabel);
+    if (idx === -1) idx = t.toLowerCase().indexOf(startLabel.toLowerCase());
+    if (idx === -1) return '';
+    const start = idx + startLabel.length;
     let end = t.length;
-    endLabels.forEach(label => {
-      const pos = t.indexOf(label);
+    stopLabels.forEach(stop => {
+      let pos = t.indexOf(stop);
+      if (pos === -1) pos = t.toLowerCase().indexOf(stop.toLowerCase());
       if (pos > start && pos < end) end = pos;
     });
     return t.slice(start, end).trim();
   }
 
   // ── Summary ──
-  const summaryText = extractSection(text, 'SUMMARY:', 'WORK_EXPERIENCE:', 'ROLE_TITLE:', 'EDUCATION:', 'COVER_LETTER:');
-  document.getElementById('out-summary').textContent = summaryText;
+  const summary = getSection(text, 'SUMMARY:', 'WORK_EXPERIENCE:', 'ROLE_TITLE:', 'EDUCATION:', 'COVER_LETTER:');
+  document.getElementById('out-summary').textContent = summary;
 
-  // ── Work Experience — strictly cut off before EDUCATION or COVER_LETTER ──
-  const workText = extractSection(text, 'WORK_EXPERIENCE:', 'EDUCATION:', 'ACHIEVEMENTS:', 'COVER_LETTER:');
+  // ── Work Experience ──
   const rolesContainer = document.getElementById('out-roles');
   rolesContainer.innerHTML = '';
 
-  const roleBlocks = workText.split(/\nROLE_TITLE:/i).filter(b => b.trim());
-  roleBlocks.forEach(block => {
-    const titleLine  = block.split('\n')[0]?.trim() || '';
-    const company    = (block.match(/COMPANY:\s*(.+)/i)  || [])[1]?.trim() || '';
-    const dates      = (block.match(/DATES:\s*(.+)/i)    || [])[1]?.trim() || '';
-    const bulletsIdx = block.indexOf('BULLETS:');
+  const workText = getSection(text, 'WORK_EXPERIENCE:', 'EDUCATION:', 'ACHIEVEMENTS:', 'COVER_LETTER:');
+
+  // Split on ROLE_TITLE: wherever it appears
+  const roleChunks = (workText || text).split(/\n?ROLE_TITLE:/i).filter(b => b.trim());
+
+  // Only process if we have multiple chunks (meaning ROLE_TITLE: was found)
+  // or if WORK_EXPERIENCE section has content
+  const blocksToProcess = roleChunks.length > 1 ? roleChunks :
+    text.split(/\n?ROLE_TITLE:/i).filter(b => b.trim()).slice(1);
+
+  blocksToProcess.forEach(block => {
+    const lines   = block.split('\n').map(l => l.trim()).filter(Boolean);
+    const title   = lines[0]?.replace(/^\*+|\*+$/g, '').trim() || '';
+    const company = (block.match(/COMPANY:\s*(.+)/i)  || [])[1]?.replace(/^\*+|\*+$/g, '').trim() || '';
+    const dates   = (block.match(/DATES:\s*(.+)/i)    || [])[1]?.replace(/^\*+|\*+$/g, '').trim() || '';
+
+    // Get bullets — everything after BULLETS: label, or lines starting with - or •
     let bullets = [];
+    const bulletsIdx = block.search(/BULLETS:/i);
     if (bulletsIdx !== -1) {
       bullets = block.slice(bulletsIdx + 8).split('\n')
+        .map(l => l.replace(/^[-•*]\s*|\*+/g, '').trim())
+        .filter(l => l.length > 8 && !l.match(/^(ROLE_TITLE|COMPANY|DATES|EDUCATION|ACHIEVEMENTS|COVER_LETTER)/i));
+    } else {
+      // Fallback: grab any bullet-looking lines
+      bullets = lines.filter(l => l.match(/^[-•*]/) || l.match(/^[A-Z][a-z]+ .{10,}/))
         .map(l => l.replace(/^[-•*]\s*/, '').trim())
-        .filter(l => l.length > 4 &&
-                     !l.match(/^(ROLE_TITLE|COMPANY|DATES|EDUCATION|ACHIEVEMENTS|COVER_LETTER)/i));
+        .filter(l => l.length > 8);
     }
-    if (!titleLine) return;
+
+    if (!title) return;
     const div = document.createElement('div');
     div.className = 'cv-role-block';
     div.innerHTML = `
       <div class="cv-role-header">
-        <span class="cv-role-title">${titleLine}</span>
+        <span class="cv-role-title">${title}</span>
         <span class="cv-role-dates">${dates}</span>
       </div>
       <div class="cv-role-company">${company}</div>
@@ -2877,28 +2886,24 @@ function parseAndRender(text) {
   });
 
   // ── Education ──
-  const eduText = extractSection(text, 'EDUCATION:', 'ACHIEVEMENTS:', 'COVER_LETTER:');
-  if (eduText && eduText !== 'NONE') {
-    const eduBlock = document.getElementById('out-education-block');
-    const eduEl    = document.getElementById('out-education');
-    eduBlock.style.display = 'block';
-    const lines = eduText.split('\n').map(l => l.replace(/^[-•*]\s*/, '').trim()).filter(Boolean);
-    eduEl.innerHTML = lines.map(l => `<div class="cv-edu-line">${l}</div>`).join('');
+  const eduText = getSection(text, 'EDUCATION:', 'ACHIEVEMENTS:', 'COVER_LETTER:');
+  if (eduText && eduText.toUpperCase() !== 'NONE' && eduText.length > 5) {
+    document.getElementById('out-education-block').style.display = 'block';
+    const lines = eduText.split('\n').map(l => l.replace(/^[-•*\s]+/, '').replace(/\*+/g, '').trim()).filter(Boolean);
+    document.getElementById('out-education').innerHTML = lines.map(l => `<div class="cv-edu-line">${l}</div>`).join('');
   }
 
   // ── Achievements ──
-  const achieveText = extractSection(text, 'ACHIEVEMENTS:', 'COVER_LETTER:');
-  if (achieveText && achieveText.trim() !== 'NONE' && achieveText.trim().length > 5) {
-    const achBlock = document.getElementById('out-achievements-block');
-    const achEl    = document.getElementById('out-achievements');
-    achBlock.style.display = 'block';
-    const lines = achieveText.split('\n').map(l => l.replace(/^[-•*]\s*/, '').trim()).filter(Boolean);
-    achEl.innerHTML = `<ul class="cv-role-bullets">${lines.map(l => `<li>${l}</li>`).join('')}</ul>`;
+  const achText = getSection(text, 'ACHIEVEMENTS:', 'COVER_LETTER:');
+  if (achText && achText.toUpperCase() !== 'NONE' && achText.length > 5) {
+    document.getElementById('out-achievements-block').style.display = 'block';
+    const lines = achText.split('\n').map(l => l.replace(/^[-•*\s]+/, '').replace(/\*+/g, '').trim()).filter(Boolean);
+    document.getElementById('out-achievements').innerHTML = `<ul class="cv-role-bullets">${lines.map(l => `<li>${l}</li>`).join('')}</ul>`;
   }
 
-  // ── Cover Letter — everything after COVER_LETTER: label ──
-  const clText = extractSection(text, 'COVER_LETTER:');
-  document.getElementById('cl-body').textContent = clText;
+  // ── Cover Letter ──
+  const clText = getSection(text, 'COVER_LETTER:');
+  document.getElementById('cl-body').textContent = clText.replace(/\*+/g, '');
 }
 
 // ─── COPY ───
