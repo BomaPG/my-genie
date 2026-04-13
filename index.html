@@ -914,6 +914,30 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; 
 
 .yn-change-btn:hover { color: var(--ink); }
 
+.cv-edu-line {
+  font-size: 0.82rem;
+  color: var(--ink);
+  line-height: 1.6;
+  padding: 0.15rem 0;
+}
+
+.yn-role-select {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 5px;
+  padding: 0.6rem 0.8rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  color: var(--ink);
+  background: white;
+  outline: none;
+  margin-bottom: 0.1rem;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.yn-role-select:focus { border-color: var(--gold); }
+
 @media (max-width: 520px) {
   .card-grid, .role-grid, .signin-grid { grid-template-columns: 1fr; }
   h1 { font-size: 1.8rem; }
@@ -1527,12 +1551,12 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; 
     <div class="screen" id="screen-7">
       <div class="screen-label">Your results</div>
       <h2 id="output-greeting">Here's your CV content.</h2>
-      <p class="sub">This is how your experience looks when it's positioned for your target role. Copy it directly into your CV.</p>
+      <p class="sub">This is how your experience looks positioned for your target role. Copy it directly into your CV.</p>
 
       <div class="output-section">
-        <div class="output-label">CV — Work Experience</div>
+        <div class="output-label">Your CV</div>
         <div class="output-actions">
-          <button class="copy-btn" onclick="copyCV()">Copy CV content</button>
+          <button class="copy-btn" onclick="copyCV()">Copy all CV content</button>
         </div>
         <div class="cv-document">
           <div class="cv-doc-header">
@@ -1544,6 +1568,14 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; 
             <div class="cv-summary-text" id="out-summary"></div>
             <div class="cv-section-title">Work Experience</div>
             <div id="out-roles"></div>
+            <div id="out-education-block" style="display:none;">
+              <div class="cv-section-title">Education</div>
+              <div id="out-education"></div>
+            </div>
+            <div id="out-achievements-block" style="display:none;">
+              <div class="cv-section-title">Achievements & Certifications</div>
+              <div id="out-achievements"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1619,7 +1651,8 @@ const state = {
   path: null,
   role: null,
   jdMode: 'yes',
-  user: { firstName: '', lastName: '', email: '', phone: '', experience: '' }
+  user: { firstName: '', lastName: '', email: '', phone: '', experience: '' },
+  cvRoles: []  // populated after CV is loaded or questionnaire is filled
 };
 
 const ROLE_LABELS = {
@@ -1884,7 +1917,38 @@ const SKILLS_QUESTIONS = {
   ]
 };
 
+function extractRolesForDropdown() {
+  const roles = [];
+  if (state.path === 'has-cv') {
+    const cvText = document.getElementById('cv-text')?.value || '';
+    // Extract role+company lines from CV text using common patterns
+    const lines = cvText.split('\n');
+    lines.forEach(line => {
+      line = line.trim();
+      // Look for lines that look like "Job Title, Company" or "Job Title at Company"
+      if (line.length > 5 && line.length < 80 &&
+          !line.match(/^[-•*]/) &&
+          !line.match(/^\d{4}/) &&
+          !line.match(/^(education|experience|skills|achievements|summary|certifications|additional)/i) &&
+          (line.match(/,\s*[A-Z]/) || line.match(/ at | — | - [A-Z]/))) {
+        roles.push(line.replace(/\s+\d{4}.*$/, '').trim());
+      }
+    });
+  } else {
+    const r1 = document.getElementById('r1-title')?.value.trim();
+    const r2 = document.getElementById('r2-title')?.value.trim();
+    const r3 = document.getElementById('r3-title')?.value.trim();
+    if (r1) roles.push(r1);
+    if (r2) roles.push(r2);
+    if (r3) roles.push(r3);
+  }
+  // Deduplicate and limit
+  state.cvRoles = [...new Set(roles)].slice(0, 8);
+  if (!state.cvRoles.length) state.cvRoles = ['My most recent role', 'A previous role'];
+}
+
 function loadSkillsQuestions() {
+  extractRolesForDropdown();
   const questions = SKILLS_QUESTIONS[state.role] || [];
   const container = document.getElementById('yn-questions-container');
   container.innerHTML = '';
@@ -1924,7 +1988,16 @@ function renderNextYNQuestion(qIndex, questions) {
       <button class="yn-btn no"  id="yn-no-${qIndex}"  onclick="answerYN(${qIndex}, false)">No</button>
     </div>
     <div class="yn-followup" id="yn-followup-${qIndex}">
-      <label style="font-size:0.78rem; color:var(--muted); margin-bottom:0.3rem; display:block;">${item.followup}</label>
+      <label style="font-size:0.78rem; color:var(--muted); margin-bottom:0.3rem; display:block;">Which role was this for?</label>
+      <select id="yn-role-${qIndex}" class="yn-role-select" onchange="handleRoleSelectChange(${qIndex})">
+        <option value="">Select a role...</option>
+        ${state.cvRoles.map(r => `<option value="${r}">${r}</option>`).join('')}
+        <option value="__other__">Other (type below)</option>
+      </select>
+      <div id="yn-role-other-${qIndex}" style="display:none; margin-top:0.4rem;">
+        <input type="text" id="yn-role-other-text-${qIndex}" placeholder="Role title, Company (Year)" style="width:100%; border:1.5px solid var(--border); border-radius:5px; padding:0.6rem 0.8rem; font-family:'DM Sans',sans-serif; font-size:0.82rem;">
+      </div>
+      <label style="font-size:0.78rem; color:var(--muted); margin:0.75rem 0 0.3rem; display:block;">${item.followup}</label>
       <textarea id="yn-detail-${qIndex}" rows="2" placeholder="Briefly describe..."></textarea>
       <button class="yn-confirm-btn" id="yn-confirm-${qIndex}" onclick="confirmYNAnswer(${qIndex})">Next</button>
     </div>
@@ -1995,12 +2068,32 @@ function changeYNAnswer(index) {
   if (wasComplete) updateGenerateButton();
 }
 
+function handleRoleSelectChange(index) {
+  const sel   = document.getElementById('yn-role-' + index);
+  const other = document.getElementById('yn-role-other-' + index);
+  if (sel && other) {
+    other.style.display = sel.value === '__other__' ? 'block' : 'none';
+  }
+}
+
 function confirmYNAnswer(index) {
   const detail = document.getElementById('yn-detail-' + index)?.value.trim();
   if (!detail) {
     showPopup('Please briefly describe your experience so My Genie has something to work with.');
     return;
   }
+
+  // Capture which role this belongs to
+  const roleSelect = document.getElementById('yn-role-' + index);
+  let assignedRole = roleSelect?.value || '';
+  if (assignedRole === '__other__') {
+    assignedRole = document.getElementById('yn-role-other-text-' + index)?.value.trim() || 'Other experience';
+  }
+  if (!assignedRole) assignedRole = state.cvRoles[0] || 'My experience';
+
+  // Store on the element for prompt building
+  document.getElementById('yn-' + index).dataset.assignedRole = assignedRole;
+
   // Mark as fully complete
   document.getElementById('yn-' + index).classList.add('yn-complete');
   document.getElementById('yn-followup-' + index).querySelector('.yn-confirm-btn').style.display = 'none';
@@ -2211,9 +2304,15 @@ function buildPrompt() {
 
   let expSection = '';
   if (state.path === 'has-cv') {
-    expSection = `CANDIDATE'S EXISTING CV TEXT:\n${document.getElementById('cv-text')?.value || ''}
+    expSection = `CANDIDATE'S EXISTING CV TEXT (use this as the source of truth for all roles, companies, dates, education, achievements and certifications):\n${document.getElementById('cv-text')?.value || ''}
 
-IMPORTANT: The candidate has uploaded their existing CV. Extract ALL roles, companies, dates and bullet points from it. Then rewrite each role's bullet points (2–3 bullets per role, maximum) to be optimised for a ${role} position. Keep the role titles, companies and dates exactly as they appear in the CV. Only rewrite the content of the bullet points to highlight what is most relevant for ${role} roles.`;
+IMPORTANT INSTRUCTIONS FOR CV PATH:
+- Extract EVERY role, company, and date exactly as written in the CV above
+- Keep the EDUCATION section exactly as it appears
+- Keep the ACHIEVEMENTS section exactly as it appears — reframe the bullet points to be relevant for a ${role} role if possible, but do not omit achievements
+- Keep any CERTIFICATIONS or ADDITIONAL INFORMATION that is relevant
+- Only rewrite the work experience bullet points (2–3 per role) to be optimised for ${role}
+- DO NOT invent companies or roles that are not in the CV`;
   } else {
     expSection = `CANDIDATE INFORMATION:
 Education: ${document.getElementById('edu-level')?.value || ''} ${document.getElementById('edu-extra')?.value || ''}
@@ -2227,26 +2326,38 @@ Certifications: ${document.getElementById('certs')?.value || ''}
 Volunteering/projects: ${document.getElementById('volunteer')?.value || ''}`;
   }
 
+  // Build skills section with role assignments
   const questions = SKILLS_QUESTIONS[state.role] || [];
-  let skillsSection = 'ADDITIONAL EXPERIENCE FROM SKILLS CHECK:\n';
-  let hasSkills = false;
+  const skillsByRole = {};
   questions.forEach((item, i) => {
-    const isYes  = document.getElementById('yn-' + i)?.querySelector('.yn-btn.yes')?.classList.contains('active');
-    const detail = document.getElementById('yn-detail-' + i)?.value || '';
+    const qDiv    = document.getElementById('yn-' + i);
+    const isYes   = qDiv?.querySelector('.yn-btn.yes')?.classList.contains('active');
+    const detail  = document.getElementById('yn-detail-' + i)?.value || '';
+    const assignedRole = qDiv?.dataset.assignedRole || '';
     if (isYes && detail) {
-      skillsSection += `- ${item.q}\n  Their answer: ${detail}\n`;
-      hasSkills = true;
+      if (!skillsByRole[assignedRole]) skillsByRole[assignedRole] = [];
+      skillsByRole[assignedRole].push({ q: item.q, detail });
     }
   });
-  if (!hasSkills) skillsSection = '';
+
+  let skillsSection = '';
+  if (Object.keys(skillsByRole).length) {
+    skillsSection = 'ADDITIONAL EXPERIENCES FROM SKILLS CHECK (add these under the correct role in the output):\n';
+    Object.entries(skillsByRole).forEach(([role, items]) => {
+      skillsSection += `\nFor role "${role}":\n`;
+      items.forEach(item => {
+        skillsSection += `  - ${item.q}\n    Detail: ${item.detail}\n`;
+      });
+    });
+  }
 
   const expTone = experience === '0-2'
-    ? 'Early-career candidate (0–2 years). Use confident but grounded language. Focus on initiative, learning speed, and tangible contributions even if small in scale.'
+    ? 'Early-career (0–2 years). Confident but grounded. Focus on initiative and contribution.'
     : experience === '2-5'
-    ? '2–5 years experience. Use assured, professional language. Show growing ownership and independent delivery.'
+    ? '2–5 years. Assured, professional. Show growing ownership and delivery.'
     : experience === '5-10'
-    ? 'Mid-level professional (5–10 years). Use authoritative language. Emphasise leadership, strategic thinking, and measurable impact.'
-    : 'Senior professional (10+ years). Use executive-level language. Emphasise leadership, transformation, and high-stakes impact.';
+    ? 'Mid-level (5–10 years). Authoritative. Emphasise leadership and measurable impact.'
+    : 'Senior (10+ years). Executive language. Leadership, transformation, commercial impact.';
 
   return `You are an expert CV writer who knows exactly what hiring managers look for when hiring ${role} candidates.
 
@@ -2261,43 +2372,47 @@ ${expSection}
 ${skillsSection}
 
 WRITING STANDARDS:
-- Action verb + context + concrete outcome on every bullet
+- Every bullet: strong action verb + context + concrete outcome
 - NO buzzwords: no "spearheaded", "leveraged", "dynamic", "passionate", "results-driven"
-- Every bullet starts with a strong past-tense verb
-- Include numbers, percentages, scale or timeframes wherever the source material supports it
-- Plain, confident English — sounds like a real person wrote it
+- Include numbers, percentages, scale or timeframes wherever source material supports it
+- Plain, confident English — sounds like a real person
 - Each bullet: one sentence, 15–25 words
 
-OUTPUT FORMAT — you MUST follow this exactly. Use these exact labels:
+CRITICAL OUTPUT FORMAT — follow this EXACTLY, character for character on the labels:
 
 SUMMARY:
-[Write 2–3 sentences here. Tailored to ${role}. Specific, not generic.]
+[2–3 sentences tailored to ${role}. Specific, not generic.]
 
-ROLES:
-ROLE_TITLE: [exact job title from CV or questionnaire]
-COMPANY: [exact company name]
+WORK_EXPERIENCE:
+ROLE_TITLE: [exact title]
+COMPANY: [exact company]
 DATES: [exact dates]
 BULLETS:
-- [bullet point]
-- [bullet point]
-- [bullet point if warranted]
-
-ROLE_TITLE: [next role]
+- [bullet]
+- [bullet]
+- [optional third bullet for most relevant role only]
+ROLE_TITLE: [next role title]
 COMPANY: [company]
 DATES: [dates]
 BULLETS:
 - [bullet]
 - [bullet]
 
-COVER_LETTER:
-[Write the full cover letter here. 3–4 paragraphs. Opens with something specific and human. Each paragraph = one concrete experience. Confident natural close. Sounds like ${firstName} wrote it.]
+EDUCATION:
+[Copy the education section from the CV exactly, one entry per line: Degree, Institution, Dates]
 
-RULES:
-- Include every role found in the CV or questionnaire
-- Give the most relevant role 3 bullets, others 1–2
-- Do not add commentary, preamble, or explanation outside the format above
-- Do not use markdown formatting like ** or ##
-- The labels SUMMARY:, ROLES:, ROLE_TITLE:, COMPANY:, DATES:, BULLETS:, COVER_LETTER: must appear exactly as written`;
+ACHIEVEMENTS:
+[Include any achievements, awards, certifications or notable projects from the CV that are relevant to ${role}. Reframe bullet points toward ${role} if helpful. If nothing is relevant, write NONE.]
+
+COVER_LETTER:
+[Full cover letter. 3–4 paragraphs. Opens with something specific and personal — NOT "I am writing to apply". Each paragraph = one concrete experience. Confident, natural close. Sounds like ${firstName} wrote it, not an AI.]
+
+STRICT RULES:
+- WORK_EXPERIENCE ends at EDUCATION: — do not let any cover letter text appear inside work experience bullets
+- Every section label (SUMMARY:, WORK_EXPERIENCE:, ROLE_TITLE:, COMPANY:, DATES:, BULLETS:, EDUCATION:, ACHIEVEMENTS:, COVER_LETTER:) must appear on its own line
+- No markdown formatting (**bold**, ##headers)
+- No commentary or explanation outside the format above
+- Do not invent roles, companies or dates not present in the source material`;
 }
 
 // ─── GENERATE ───
@@ -2345,68 +2460,92 @@ function parseAndRender(text) {
   document.getElementById('cl-contact').textContent = contactParts.join('  ·  ');
   document.getElementById('output-greeting').textContent = `Here's your CV, ${firstName}.`;
 
-  // ── Summary — try exact match first, then fallback ──
-  let summary = '';
-  const summaryExact = text.match(/SUMMARY:\s*\n([\s\S]*?)(?=\nROLES:|\nROLE_TITLE:)/);
-  if (summaryExact) {
-    summary = summaryExact[1].trim();
-  } else {
-    const summaryLoose = text.match(/SUMMARY[:\s]+([\s\S]{20,400}?)(?=ROLES|ROLE_TITLE|WORK EXP)/i);
-    if (summaryLoose) summary = summaryLoose[1].trim();
-  }
-  document.getElementById('out-summary').textContent = summary;
+  // ── Cleanly split text into sections using the new labels ──
+  // Find positions of each major section label
+  const sectionStarts = {
+    summary:        findSection(text, 'SUMMARY:'),
+    work_exp:       findSection(text, 'WORK_EXPERIENCE:'),
+    education:      findSection(text, 'EDUCATION:'),
+    achievements:   findSection(text, 'ACHIEVEMENTS:'),
+    cover_letter:   findSection(text, 'COVER_LETTER:'),
+  };
 
-  // ── Roles ──
+  function findSection(t, label) {
+    const idx = t.indexOf(label);
+    return idx === -1 ? null : idx + label.length;
+  }
+
+  function extractSection(t, startLabel, ...endLabels) {
+    const start = findSection(t, startLabel);
+    if (start === null) return '';
+    let end = t.length;
+    endLabels.forEach(label => {
+      const pos = t.indexOf(label);
+      if (pos > start && pos < end) end = pos;
+    });
+    return t.slice(start, end).trim();
+  }
+
+  // ── Summary ──
+  const summaryText = extractSection(text, 'SUMMARY:', 'WORK_EXPERIENCE:', 'ROLE_TITLE:', 'EDUCATION:', 'COVER_LETTER:');
+  document.getElementById('out-summary').textContent = summaryText;
+
+  // ── Work Experience — strictly cut off before EDUCATION or COVER_LETTER ──
+  const workText = extractSection(text, 'WORK_EXPERIENCE:', 'EDUCATION:', 'ACHIEVEMENTS:', 'COVER_LETTER:');
   const rolesContainer = document.getElementById('out-roles');
   rolesContainer.innerHTML = '';
 
-  // Split on ROLE_TITLE: regardless of surrounding whitespace
-  const roleBlocks = text.split(/\nROLE_TITLE:/i).slice(1);
+  const roleBlocks = workText.split(/\nROLE_TITLE:/i).filter(b => b.trim());
+  roleBlocks.forEach(block => {
+    const titleLine  = block.split('\n')[0]?.trim() || '';
+    const company    = (block.match(/COMPANY:\s*(.+)/i)  || [])[1]?.trim() || '';
+    const dates      = (block.match(/DATES:\s*(.+)/i)    || [])[1]?.trim() || '';
+    const bulletsIdx = block.indexOf('BULLETS:');
+    let bullets = [];
+    if (bulletsIdx !== -1) {
+      bullets = block.slice(bulletsIdx + 8).split('\n')
+        .map(l => l.replace(/^[-•*]\s*/, '').trim())
+        .filter(l => l.length > 4 &&
+                     !l.match(/^(ROLE_TITLE|COMPANY|DATES|EDUCATION|ACHIEVEMENTS|COVER_LETTER)/i));
+    }
+    if (!titleLine) return;
+    const div = document.createElement('div');
+    div.className = 'cv-role-block';
+    div.innerHTML = `
+      <div class="cv-role-header">
+        <span class="cv-role-title">${titleLine}</span>
+        <span class="cv-role-dates">${dates}</span>
+      </div>
+      <div class="cv-role-company">${company}</div>
+      <ul class="cv-role-bullets">
+        ${bullets.map(b => `<li>${b}</li>`).join('')}
+      </ul>`;
+    rolesContainer.appendChild(div);
+  });
 
-  if (roleBlocks.length) {
-    roleBlocks.forEach(block => {
-      const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
-
-      const title   = lines[0] || '';
-      const company = (block.match(/COMPANY:\s*(.+)/i) || [])[1]?.trim() || '';
-      const dates   = (block.match(/DATES:\s*(.+)/i)   || [])[1]?.trim() || '';
-
-      const bulletsStart = block.indexOf('BULLETS:');
-      let bullets = [];
-      if (bulletsStart !== -1) {
-        const bulletText = block.slice(bulletsStart + 8);
-        bullets = bulletText.split('\n')
-          .map(l => l.replace(/^[-•*]\s*/, '').trim())
-          .filter(l => l.length > 5 && !l.match(/^(ROLE_TITLE|COMPANY|DATES|COVER_LETTER)/i));
-      }
-
-      if (!title && !company) return;
-
-      const div = document.createElement('div');
-      div.className = 'cv-role-block';
-      div.innerHTML = `
-        <div class="cv-role-header">
-          <span class="cv-role-title">${title}</span>
-          <span class="cv-role-dates">${dates}</span>
-        </div>
-        <div class="cv-role-company">${company}</div>
-        <ul class="cv-role-bullets">
-          ${bullets.map(b => `<li>${b}</li>`).join('')}
-        </ul>`;
-      rolesContainer.appendChild(div);
-    });
+  // ── Education ──
+  const eduText = extractSection(text, 'EDUCATION:', 'ACHIEVEMENTS:', 'COVER_LETTER:');
+  if (eduText && eduText !== 'NONE') {
+    const eduBlock = document.getElementById('out-education-block');
+    const eduEl    = document.getElementById('out-education');
+    eduBlock.style.display = 'block';
+    const lines = eduText.split('\n').map(l => l.replace(/^[-•*]\s*/, '').trim()).filter(Boolean);
+    eduEl.innerHTML = lines.map(l => `<div class="cv-edu-line">${l}</div>`).join('');
   }
 
-  // ── Cover letter ──
-  let coverLetter = '';
-  const clExact = text.match(/COVER_LETTER:\s*\n([\s\S]+)$/i);
-  if (clExact) {
-    coverLetter = clExact[1].trim();
-  } else {
-    const clLoose = text.match(/COVER.LETTER[:\s]+([\s\S]{50,})/i);
-    if (clLoose) coverLetter = clLoose[1].trim();
+  // ── Achievements ──
+  const achieveText = extractSection(text, 'ACHIEVEMENTS:', 'COVER_LETTER:');
+  if (achieveText && achieveText.trim() !== 'NONE' && achieveText.trim().length > 5) {
+    const achBlock = document.getElementById('out-achievements-block');
+    const achEl    = document.getElementById('out-achievements');
+    achBlock.style.display = 'block';
+    const lines = achieveText.split('\n').map(l => l.replace(/^[-•*]\s*/, '').trim()).filter(Boolean);
+    achEl.innerHTML = `<ul class="cv-role-bullets">${lines.map(l => `<li>${l}</li>`).join('')}</ul>`;
   }
-  document.getElementById('cl-body').textContent = coverLetter;
+
+  // ── Cover Letter — everything after COVER_LETTER: label ──
+  const clText = extractSection(text, 'COVER_LETTER:');
+  document.getElementById('cl-body').textContent = clText;
 }
 
 // ─── COPY ───
@@ -2424,6 +2563,18 @@ function copyCV() {
     text += `\n${title}  ${dates}\n${company}\n${bullets}\n`;
   });
 
+  const eduBlock = document.getElementById('out-education-block');
+  if (eduBlock.style.display !== 'none') {
+    text += '\nEDUCATION\n';
+    document.querySelectorAll('.cv-edu-line').forEach(l => { text += l.textContent + '\n'; });
+  }
+
+  const achBlock = document.getElementById('out-achievements-block');
+  if (achBlock.style.display !== 'none') {
+    text += '\nACHIEVEMENTS & CERTIFICATIONS\n';
+    document.querySelectorAll('#out-achievements li').forEach(l => { text += `• ${l.textContent}\n`; });
+  }
+
   navigator.clipboard.writeText(text).then(() => alert('CV content copied!'));
 }
 
@@ -2434,38 +2585,30 @@ function copyCL() {
   navigator.clipboard.writeText(`${name}\n${contact}\n\n${body}`).then(() => alert('Cover letter copied!'));
 }
 
-// ─── FALLBACK ───
+// ─── FALLBACK (shown only if API call fails entirely) ───
 function getFallback() {
-  const fn = state.user.firstName || 'Candidate';
+  const fn   = state.user.firstName || 'Candidate';
+  const role = ROLE_LABELS[state.role] || 'the target role';
   return `SUMMARY:
-Strategy-driven professional with a strong foundation in ${ROLE_LABELS[state.role] || 'business'} and a proven ability to deliver results across complex, multi-stakeholder environments. Known for translating analytical thinking into clear, actionable outputs that drive decisions at senior level.
+Unable to generate output — this is a placeholder. Please check your internet connection and try again, or ensure the API is connected correctly.
 
-ROLES:
-ROLE_TITLE: Business Analyst
-COMPANY: Zenith Bank
-DATES: January 2022 – Present
+WORK_EXPERIENCE:
+ROLE_TITLE: [Your most recent role]
+COMPANY: [Your company]
+DATES: [Your dates]
 BULLETS:
-- Built quarterly financial models that reduced reporting preparation time from 3 days to 4 hours.
-- Coordinated a cross-functional project across 4 departments, delivering on time with no budget overrun.
-- Prepared client-facing reports and briefing notes presented directly to C-suite stakeholders.
+- Your experience will appear here once the API is connected.
 
-ROLE_TITLE: Marketing Intern
-COMPANY: Sterling Bank
-DATES: June 2020 – December 2021
-BULLETS:
-- Managed the bank's LinkedIn presence, growing followers by 40% over 6 months.
-- Supported the BD team by building pitch decks used in 5 successful client proposals.
+EDUCATION:
+Your education will appear here.
+
+ACHIEVEMENTS:
+NONE
 
 COVER_LETTER:
 Dear Hiring Manager,
 
-Most people think of their work history as a list of jobs. I think of it as a record of problems solved and trust earned — which is why I'm excited about this opportunity.
-
-In my current role at Zenith Bank, I've spent two years sitting at the intersection of data and decision-making. I built the financial models that leadership now relies on for quarterly planning, cutting the process from three days to half a day. More importantly, I learned how to communicate complex findings to non-technical audiences — a skill I'd bring directly to this role.
-
-Before that, I spent time in a marketing environment where I learned what it takes to build a presence from scratch. Growing an audience by 40% in six months taught me that results come from consistency and iteration, not one-off efforts.
-
-I'd welcome the chance to discuss how my background maps to what you're building. Thank you for your time.
+This is a placeholder cover letter. The API did not return a response. Please try again.
 
 Sincerely,
 ${fn}`;
