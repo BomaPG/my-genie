@@ -1,0 +1,2289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Genie — Know Your Story</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0f0e0c;
+  --paper: #faf8f4;
+  --gold: #c9a84c;
+  --gold-light: #e8d5a3;
+  --muted: #7a7669;
+  --border: #e2ddd4;
+  --surface: #f2ede6;
+  --white: #ffffff;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ─── SPLASH SCREEN ─── */
+#splash {
+  position: fixed;
+  inset: 0;
+  background: var(--ink);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  overflow: hidden;
+}
+
+.splash-phase { display: none; width: 100%; max-width: 700px; text-align: center; }
+.splash-phase.active { display: flex; flex-direction: column; align-items: center; }
+
+/* Phase 1 */
+#phase1 { animation: fadeIn 0.8s ease forwards; }
+
+.splash-eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 1.5rem;
+  opacity: 0;
+  animation: fadeIn 1s ease 0.3s forwards;
+}
+
+.splash-headline {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(2.2rem, 6vw, 4.2rem);
+  font-weight: 300;
+  color: var(--paper);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+  opacity: 0;
+  animation: fadeUp 0.9s ease 0.5s forwards;
+}
+
+.splash-sub {
+  font-size: 1rem;
+  color: #9a9590;
+  opacity: 0;
+  animation: fadeUp 0.9s ease 0.9s forwards;
+  max-width: 480px;
+}
+
+/* Phase 2 - Typing animation */
+#phase2 { gap: 2rem; }
+
+.typing-demo {
+  background: #1a1916;
+  border: 1px solid #2e2c28;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 560px;
+  overflow: hidden;
+}
+
+.typing-bar {
+  background: #242220;
+  padding: 0.6rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-bottom: 1px solid #2e2c28;
+}
+
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot-r { background: #ff5f57; }
+.dot-y { background: #febc2e; }
+.dot-g { background: #28c840; }
+
+.typing-content {
+  padding: 1.25rem 1.5rem;
+  text-align: left;
+  min-height: 90px;
+}
+
+.typing-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.typed-text {
+  font-size: 0.875rem;
+  color: #c8c4bc;
+  line-height: 1.6;
+}
+
+.cursor {
+  display: inline-block;
+  width: 2px;
+  height: 14px;
+  background: var(--gold);
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: blink 0.7s step-end infinite;
+}
+
+@keyframes blink { 50% { opacity: 0; } }
+
+.transform-arrow {
+  color: var(--gold);
+  font-size: 1.5rem;
+  animation: bounce 1s ease infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+
+.cv-preview {
+  background: var(--white);
+  border-radius: 8px;
+  width: 100%;
+  max-width: 560px;
+  padding: 1.5rem 2rem;
+  text-align: left;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.6s ease;
+}
+
+.cv-preview.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cv-prev-name {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--ink);
+  margin-bottom: 0.25rem;
+}
+
+.cv-prev-role {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1.5px solid var(--gold);
+}
+
+.cv-prev-bullet {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--ink);
+  margin-bottom: 0.35rem;
+  line-height: 1.4;
+  align-items: flex-start;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: all 0.4s ease;
+}
+
+.cv-prev-bullet.in { opacity: 1; transform: translateX(0); }
+.cv-prev-dot { color: var(--gold); margin-top: 2px; flex-shrink: 0; }
+
+/* Phase 3 - Hired */
+#phase3 { gap: 1.5rem; animation: fadeIn 0.8s ease forwards; }
+
+.hired-icon {
+  width: 72px; height: 72px;
+  animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Splash CV icon (phase1) */
+.splash-cv-icon {
+  width: 64px; height: 64px;
+  margin-bottom: 1.5rem;
+  opacity: 0;
+  animation: fadeUp 0.8s ease 0.1s forwards;
+}
+
+@keyframes popIn {
+  from { transform: scale(0); }
+  to   { transform: scale(1); }
+}
+
+.hired-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(1.8rem, 5vw, 3rem);
+  color: var(--paper);
+  font-weight: 300;
+  line-height: 1.2;
+}
+
+.hired-sub {
+  font-size: 0.875rem;
+  color: #9a9590;
+  max-width: 380px;
+}
+
+.btn-begin {
+  margin-top: 0.5rem;
+  background: var(--gold);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 0.9rem 2.5rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: all 0.2s;
+  animation: fadeUp 0.6s ease 0.4s both;
+}
+
+.btn-begin:hover { background: #b8973d; transform: translateY(-1px); }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── MAIN APP ─── */
+#main-app { display: none; }
+#main-app.visible { display: block; }
+
+header {
+  padding: 1.5rem 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--paper);
+  z-index: 100;
+}
+
+.logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.logo span { color: var(--gold); }
+
+.header-user {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.progress-bar { height: 2px; background: var(--border); }
+.progress-fill { height: 100%; background: var(--gold); transition: width 0.5s ease; }
+
+.app {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 3rem 2rem 6rem;
+}
+
+.screen { display: none; animation: fadeUp 0.4s ease; }
+.screen.active { display: block; }
+
+.screen-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+
+h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.4rem;
+  font-weight: 300;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.75rem;
+}
+
+h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.8rem;
+  font-weight: 400;
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+}
+
+.sub {
+  color: var(--muted);
+  font-size: 0.875rem;
+  margin-bottom: 2.5rem;
+  max-width: 520px;
+}
+
+/* ─── SIGN IN ─── */
+.signin-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.field { margin-bottom: 1.25rem; }
+.field.full { grid-column: 1 / -1; }
+
+label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 0.4rem;
+}
+
+.label-hint { font-weight: 400; color: var(--muted); font-size: 0.75rem; }
+
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+textarea,
+select {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 5px;
+  padding: 0.7rem 0.9rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  color: var(--ink);
+  background: white;
+  outline: none;
+  transition: border-color 0.2s;
+  resize: vertical;
+  -webkit-appearance: none;
+}
+
+input:focus, textarea:focus, select:focus { border-color: var(--gold); }
+textarea { min-height: 85px; }
+
+/* ─── CARDS / ROLES ─── */
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.card {
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+  text-align: left;
+}
+
+.card:hover { border-color: var(--gold); background: var(--surface); }
+.card.selected { border-color: var(--gold); background: #fdf8ee; }
+.card-icon { font-size: 1.3rem; margin-bottom: 0.5rem; }
+.card-title { font-weight: 500; font-size: 0.875rem; margin-bottom: 0.2rem; }
+.card-desc { font-size: 0.77rem; color: var(--muted); line-height: 1.4; }
+
+.role-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 2.5rem;
+}
+
+.role-btn {
+  border: 1.5px solid var(--border);
+  border-radius: 5px;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  background: white;
+  text-align: left;
+  transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--ink);
+}
+
+.role-btn:hover { border-color: var(--gold); background: var(--surface); }
+.role-btn.selected { border-color: var(--gold); background: #fdf8ee; }
+.role-btn .role-name { font-weight: 500; font-size: 0.875rem; }
+.role-btn .role-sub  { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+/* ─── JD TOGGLE ─── */
+.toggle-group { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+
+.toggle-btn {
+  flex: 1;
+  padding: 0.6rem;
+  border: 1.5px solid var(--border);
+  border-radius: 5px;
+  background: white;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--muted);
+  transition: all 0.2s;
+}
+
+.toggle-btn.active { border-color: var(--gold); background: #fdf8ee; color: var(--ink); }
+
+/* ─── SECTION HEADERS ─── */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-num {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 500;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.section-title { font-weight: 500; font-size: 0.875rem; }
+.section-sub   { font-size: 0.75rem; color: var(--muted); }
+
+/* ─── Y/N QUESTIONS ─── */
+.yn-question {
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  padding: 1.1rem 1.4rem;
+  margin-bottom: 0.7rem;
+  background: white;
+  transition: border-color 0.2s;
+}
+
+.yn-question.answered { border-color: var(--gold-light); }
+.yn-text { font-size: 0.875rem; line-height: 1.5; margin-bottom: 0.7rem; }
+
+.yn-buttons { display: flex; gap: 0.5rem; }
+
+.yn-btn {
+  padding: 0.3rem 0.9rem;
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 500;
+  transition: all 0.15s;
+  color: var(--muted);
+}
+
+.yn-btn.yes.active { border-color: #2e7d32; background: #f1f8f1; color: #2e7d32; }
+.yn-btn.no.active  { border-color: var(--border); background: var(--surface); color: var(--ink); }
+
+.yn-followup { margin-top: 0.7rem; display: none; }
+.yn-followup.visible { display: block; animation: fadeUp 0.25s ease; }
+
+/* ─── BUTTONS ─── */
+.btn-primary {
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  border-radius: 5px;
+  padding: 0.8rem 2rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover { background: #2a2824; }
+.btn-primary:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+.btn-gold {
+  background: var(--gold);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 0.9rem 2.5rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-gold:hover { background: #b8973d; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1.5px solid var(--border);
+  border-radius: 5px;
+  padding: 0.75rem 1.5rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-ghost:hover { border-color: var(--muted); color: var(--ink); }
+
+.btn-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 2rem;
+}
+
+/* ─── LOADING ─── */
+.loading-state { text-align: center; padding: 5rem 2rem; }
+
+.spinner {
+  width: 36px; height: 36px;
+  border: 2px solid var(--border);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 1.5rem;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-label {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem;
+  font-weight: 300;
+  color: var(--muted);
+}
+
+/* ─── CV OUTPUT ─── */
+.output-section { margin-bottom: 2.5rem; }
+
+.output-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+/* CV document style */
+.cv-document {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+}
+
+.cv-doc-header {
+  padding: 2rem 2.5rem 1.5rem;
+  border-bottom: 2px solid var(--gold);
+  text-align: center;
+}
+
+.cv-doc-name {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 1.4rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-bottom: 0.4rem;
+}
+
+.cv-doc-contact {
+  font-size: 0.78rem;
+  color: var(--muted);
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.cv-doc-body { padding: 1.75rem 2.5rem; }
+
+.cv-section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  border-bottom: 1.5px solid var(--ink);
+  padding-bottom: 0.3rem;
+  margin-bottom: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.cv-section-title:first-child { margin-top: 0; }
+
+.cv-role-block { margin-bottom: 1.5rem; }
+
+.cv-role-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.1rem;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.cv-role-title {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--ink);
+}
+
+.cv-role-dates {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.cv-role-company {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-style: italic;
+  margin-bottom: 0.6rem;
+}
+
+.cv-role-bullets { list-style: none; padding: 0; }
+
+.cv-role-bullets li {
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--ink);
+  padding: 0.25rem 0 0.25rem 1rem;
+  position: relative;
+}
+
+.cv-role-bullets li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--ink);
+}
+
+.cv-summary-text {
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+/* Cover letter */
+.cover-letter-doc {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2.5rem;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+}
+
+.cl-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.cl-name { font-weight: 700; font-size: 1rem; color: var(--ink); }
+.cl-contact { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
+.cl-body { font-size: 0.82rem; line-height: 1.75; color: var(--ink); white-space: pre-wrap; }
+
+.output-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  justify-content: flex-end;
+}
+
+.copy-btn {
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s;
+}
+
+.copy-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+.notice {
+  background: var(--surface);
+  border-left: 3px solid var(--gold);
+  padding: 1rem 1.25rem;
+  border-radius: 0 5px 5px 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-top: 2rem;
+  line-height: 1.5;
+}
+
+hr.divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+@media (max-width: 520px) {
+  .card-grid, .role-grid, .signin-grid { grid-template-columns: 1fr; }
+  h1 { font-size: 1.8rem; }
+  .cv-doc-header { padding: 1.5rem; }
+  .cv-doc-body { padding: 1.25rem 1.5rem; }
+  .cover-letter-doc { padding: 1.5rem; }
+}
+
+/* ─── VOICE RECORDER ─── */
+.field-with-voice {
+  position: relative;
+}
+
+.voice-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: white;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+  z-index: 2;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* For single-line inputs, centre vertically */
+.field-with-voice input ~ .voice-btn {
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+}
+
+.voice-btn:hover { border-color: var(--gold); background: var(--surface); }
+.voice-btn.recording { border-color: #e53e3e; background: #fff5f5; animation: pulse-ring 1.2s ease infinite; }
+.voice-btn.paused    { border-color: #dd6b20; background: #fffaf0; }
+
+.voice-btn svg { width: 13px; height: 13px; }
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(229,62,62,0.35); }
+  70%  { box-shadow: 0 0 0 7px rgba(229,62,62,0); }
+  100% { box-shadow: 0 0 0 0 rgba(229,62,62,0); }
+}
+
+/* padding so text doesn't overlap mic button */
+.field-with-voice textarea {
+  padding-right: 2.8rem;
+}
+
+.field-with-voice input[type="text"],
+.field-with-voice input[type="email"],
+.field-with-voice input[type="tel"] {
+  padding-right: 2.8rem;
+}
+
+/* ─── VOICE MODAL ─── */
+.voice-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,14,12,0.6);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.2s ease;
+}
+
+.voice-modal {
+  background: var(--paper);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 520px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  animation: fadeUp 0.25s ease;
+}
+
+.voice-modal-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.voice-modal-title {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--ink);
+}
+
+.voice-modal-close {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+
+.voice-modal-close:hover { background: var(--border); color: var(--ink); }
+
+.voice-modal-body { padding: 1.5rem; }
+
+/* Status bar */
+.voice-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.voice-status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.voice-status-dot.live    { background: #e53e3e; animation: blink 1s step-end infinite; }
+.voice-status-dot.paused  { background: #dd6b20; }
+.voice-status-dot.done    { background: #38a169; }
+
+.voice-timer {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* Waveform */
+.voice-waveform {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  margin-bottom: 1.25rem;
+}
+
+.wave-bar {
+  width: 3px;
+  background: var(--gold-light);
+  border-radius: 2px;
+  height: 6px;
+  transition: height 0.1s ease;
+}
+
+.wave-bar.active {
+  background: var(--gold);
+  animation: wave-dance var(--dur, 0.6s) ease-in-out infinite alternate;
+}
+
+@keyframes wave-dance {
+  from { height: 4px; }
+  to   { height: var(--max, 28px); }
+}
+
+/* Recorder controls */
+.voice-controls {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  justify-content: center;
+}
+
+.vc-btn {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: 5px;
+  border: 1.5px solid var(--border);
+  background: white;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--ink);
+  transition: all 0.2s;
+}
+
+.vc-btn:hover { border-color: var(--gold); background: var(--surface); }
+.vc-btn.danger { border-color: #fed7d7; color: #e53e3e; }
+.vc-btn.danger:hover { background: #fff5f5; border-color: #e53e3e; }
+.vc-btn svg { width: 13px; height: 13px; }
+
+/* Transcript edit area */
+.voice-transcript-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+
+.voice-transcript {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 5px;
+  padding: 0.75rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  color: var(--ink);
+  background: white;
+  resize: vertical;
+  min-height: 100px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.voice-transcript:focus { border-color: var(--gold); }
+
+.voice-modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.btn-complete {
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  border-radius: 5px;
+  padding: 0.65rem 1.5rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-complete:hover { background: #2a2824; }
+.btn-complete:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+.btn-discard {
+  background: transparent;
+  color: var(--muted);
+  border: 1.5px solid var(--border);
+  border-radius: 5px;
+  padding: 0.6rem 1.25rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-discard:hover { border-color: var(--muted); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     SPLASH SCREEN
+════════════════════════════════════════════ -->
+<div id="splash">
+
+  <!-- Phase 1: Headline -->
+  <div class="splash-phase active" id="phase1">
+    <!-- CV Icon SVG -->
+    <svg class="splash-cv-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="6" width="38" height="50" rx="3" fill="#1a1916" stroke="#c9a84c" stroke-width="1.5"/>
+      <rect x="22" y="2" width="14" height="8" rx="2" fill="#c9a84c"/>
+      <line x1="18" y1="24" x2="40" y2="24" stroke="#c9a84c" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="18" y1="32" x2="40" y2="32" stroke="#3a3830" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="18" y1="40" x2="32" y2="40" stroke="#3a3830" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="18" cy="18" r="3" fill="#c9a84c" opacity="0.6"/>
+      <line x1="24" y1="18" x2="40" y2="18" stroke="#3a3830" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <div class="splash-eyebrow">My Genie</div>
+    <div class="splash-headline">You have more experience<br>than you realise.</div>
+    <div class="splash-sub">Express your full capabilities with…</div>
+  </div>
+
+  <!-- Phase 2: Typing → CV transformation -->
+  <div class="splash-phase" id="phase2">
+    <div class="typing-demo">
+      <div class="typing-bar">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+      </div>
+      <div class="typing-content">
+        <div class="typing-label">Your raw experience</div>
+        <div class="typed-text" id="typed-text"><span class="cursor"></span></div>
+      </div>
+    </div>
+
+    <div class="transform-arrow">↓</div>
+
+    <div class="cv-preview" id="cv-preview">
+      <div class="cv-prev-name">Amara Okonkwo</div>
+      <div class="cv-prev-role">Business Development Associate · Lagos</div>
+      <div class="cv-prev-bullet" id="b1"><span class="cv-prev-dot">•</span><span>Secured 3 new enterprise partnerships worth ₦42m in revenue within the first 6 months.</span></div>
+      <div class="cv-prev-bullet" id="b2"><span class="cv-prev-dot">•</span><span>Built and managed a pipeline of 60+ qualified leads, converting at 18% above team average.</span></div>
+      <div class="cv-prev-bullet" id="b3"><span class="cv-prev-dot">•</span><span>Delivered pitch decks that closed deals with two Fortune 500 regional clients.</span></div>
+    </div>
+  </div>
+
+  <!-- Phase 3: Hired -->
+  <div class="splash-phase" id="phase3">
+    <!-- Magic wand SVG -->
+    <svg class="hired-icon" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <line x1="14" y1="58" x2="44" y2="18" stroke="#c9a84c" stroke-width="4" stroke-linecap="round"/>
+      <rect x="40" y="10" width="10" height="10" rx="2" transform="rotate(15 40 10)" fill="#c9a84c" opacity="0.9"/>
+      <!-- sparkles -->
+      <circle cx="56" cy="16" r="2.5" fill="#c9a84c"/>
+      <line x1="56" y1="9"  x2="56" y2="23" stroke="#c9a84c" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+      <line x1="49" y1="16" x2="63" y2="16" stroke="#c9a84c" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+      <circle cx="20" cy="12" r="2" fill="#e8d5a3"/>
+      <line x1="20" y1="7"  x2="20" y2="17" stroke="#e8d5a3" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+      <line x1="15" y1="12" x2="25" y2="12" stroke="#e8d5a3" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+      <circle cx="60" cy="48" r="1.5" fill="#e8d5a3" opacity="0.7"/>
+    </svg>
+    <div class="hired-text">My Genie</div>
+    <div class="hired-sub">Tell us what you've done. We'll show you why it matters — and how to say it.</div>
+    <button class="btn-begin" onclick="startApp()">Let's begin →</button>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════════ -->
+<div id="main-app">
+  <header>
+    <div class="logo">My<span>Genie</span></div>
+    <div class="header-user" id="header-user"></div>
+  </header>
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress" style="width: 0%"></div>
+  </div>
+
+  <div class="app">
+
+    <!-- SCREEN 0: SIGN IN -->
+    <div class="screen active" id="screen-0">
+      <div class="screen-label">Let's get started</div>
+      <h2>A few things about you first.</h2>
+
+      <div class="signin-grid">
+        <div class="field no-voice">
+          <label>First name</label>
+          <input type="text" id="si-firstname" placeholder="Amara">
+        </div>
+        <div class="field no-voice">
+          <label>Last name</label>
+          <input type="text" id="si-lastname" placeholder="Okonkwo">
+        </div>
+        <div class="field no-voice">
+          <label>Email address</label>
+          <input type="email" id="si-email" placeholder="amara@email.com">
+        </div>
+        <div class="field no-voice">
+          <label>Phone number</label>
+          <input type="tel" id="si-phone" placeholder="+234 800 000 0000">
+        </div>
+        <div class="field full">
+          <label>How long have you been working? <span class="label-hint">Include internships, part-time and contract work</span></label>
+          <select id="si-experience">
+            <option value="" disabled selected>Select your experience level</option>
+            <option value="0-2">0 – 2 years (early career)</option>
+            <option value="2-5">2 – 5 years (building experience)</option>
+            <option value="5-10">5 – 10 years (mid-level)</option>
+            <option value="10+">10+ years (senior)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary" id="btn-signin-next" onclick="handleSignIn()">Continue</button>
+      </div>
+    </div>
+
+    <!-- SCREEN 1: PATH -->
+    <div class="screen" id="screen-1">
+      <div class="screen-label">Step 1 of 5</div>
+      <h2>Do you have a CV already?</h2>
+      <p class="sub">Either way, we'll work with what you have.</p>
+
+      <div class="card-grid">
+        <div class="card" onclick="selectPath('has-cv')" id="card-has-cv">
+          <div class="card-icon">📄</div>
+          <div class="card-title">Yes, I have a CV</div>
+          <div class="card-desc">Paste it in and we'll analyse and rewrite it for your target role.</div>
+        </div>
+        <div class="card" onclick="selectPath('no-cv')" id="card-no-cv">
+          <div class="card-icon">✏️</div>
+          <div class="card-title">I don't have one</div>
+          <div class="card-desc">We'll ask you a few questions and build your story from scratch.</div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary" id="btn-path-next" disabled onclick="goToStep(2)">Continue</button>
+      </div>
+    </div>
+
+    <!-- SCREEN 2: ROLE -->
+    <div class="screen" id="screen-2">
+      <div class="screen-label">Step 2 of 5</div>
+      <h2>What role are you applying for?</h2>
+      <p class="sub">Pick the closest one. We'll tailor everything to what matters in that field.</p>
+
+      <div class="role-grid">
+        <button class="role-btn" onclick="selectRole('lawyer')" id="role-lawyer">
+          <div class="role-name">Lawyer / Legal Associate</div>
+          <div class="role-sub">Corporate, commercial, litigation</div>
+        </button>
+        <button class="role-btn" onclick="selectRole('consultant')" id="role-consultant">
+          <div class="role-name">Management Consultant</div>
+          <div class="role-sub">Strategy, advisory, operations</div>
+        </button>
+        <button class="role-btn" onclick="selectRole('bizdev')" id="role-bizdev">
+          <div class="role-name">Business Development</div>
+          <div class="role-sub">Sales, partnerships, growth</div>
+        </button>
+        <button class="role-btn" onclick="selectRole('marketing')" id="role-marketing">
+          <div class="role-name">Marketing</div>
+          <div class="role-sub">Product marketing, content, brand</div>
+        </button>
+        <button class="role-btn" onclick="selectRole('pm')" id="role-pm" style="grid-column: 1 / -1;">
+          <div class="role-name">Product / Project Manager</div>
+          <div class="role-sub">PM, programme management, delivery</div>
+        </button>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-ghost" onclick="goToStep(1)">Back</button>
+        <button class="btn-primary" id="btn-role-next" disabled onclick="goToStep(3)">Continue</button>
+      </div>
+    </div>
+
+    <!-- SCREEN 3: JD -->
+    <div class="screen" id="screen-3">
+      <div class="screen-label">Step 3 of 5</div>
+      <h2>Do you have a job description?</h2>
+      <p class="sub">If you have the actual JD, paste it below. It makes the output significantly more accurate.</p>
+
+      <div class="toggle-group">
+        <button class="toggle-btn active" id="jd-yes-btn" onclick="toggleJD('yes')">Yes, I have one</button>
+        <button class="toggle-btn" id="jd-no-btn" onclick="toggleJD('no')">No, just the role</button>
+      </div>
+
+      <div id="jd-input-area">
+        <div class="field">
+          <label>Paste the job description here</label>
+          <textarea id="jd-text" rows="8" placeholder="Copy and paste the job description directly from the company's website or job board..."></textarea>
+        </div>
+      </div>
+
+      <div id="jd-skip-area" style="display:none;">
+        <div style="height: 1rem;"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-ghost" onclick="goToStep(2)">Back</button>
+        <button class="btn-primary" onclick="goToStep(4)">Continue</button>
+      </div>
+    </div>
+
+    <!-- SCREEN 4A: PASTE CV -->
+    <div class="screen" id="screen-4a">
+      <div class="screen-label">Step 4 of 5</div>
+      <h2>Paste your current CV</h2>
+      <p class="sub">Include everything — even roles that seem unrelated. You might be surprised what's relevant.</p>
+
+      <div class="field">
+        <label>Your CV text <span class="label-hint">Copy and paste from your Word doc or PDF</span></label>
+        <textarea id="cv-text" rows="16" placeholder="Paste your full CV here. Include job titles, company names, dates, and all your bullet points..."></textarea>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-ghost" onclick="goToStep(3)">Back</button>
+        <button class="btn-primary" onclick="goToStep(5)">Continue</button>
+      </div>
+    </div>
+
+    <!-- SCREEN 4B: NO CV QUESTIONNAIRE -->
+    <div class="screen" id="screen-4b">
+      <div class="screen-label">Step 4 of 5</div>
+      <h2>Tell us about your experience</h2>
+      <p class="sub">Answer freely. There are no wrong answers — the goal is to get as much of your story as possible.</p>
+
+      <div class="section-header">
+        <div class="section-num">1</div>
+        <div>
+          <div class="section-title">Education</div>
+          <div class="section-sub">Your highest qualification</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Highest level of education completed</label>
+        <input type="text" id="edu-level" placeholder="e.g. BSc Economics, University of Lagos, 2019">
+      </div>
+      <div class="field">
+        <label>Academic achievements, projects or leadership <span class="label-hint">Optional</span></label>
+        <textarea id="edu-extra" rows="2" placeholder="e.g. Class rep, thesis on X, graduated with distinction..."></textarea>
+      </div>
+
+      <hr class="divider">
+
+      <div class="section-header">
+        <div class="section-num">2</div>
+        <div>
+          <div class="section-title">Work & Project Experience</div>
+          <div class="section-sub">Most recent role + up to 2 previous</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 2rem;">
+        <p style="font-size:0.78rem; font-weight:500; color:var(--gold); margin-bottom:1rem; letter-spacing:0.06em; text-transform:uppercase;">Most recent role</p>
+        <div class="field no-voice"><label>Job title & company</label><input type="text" id="r1-title" placeholder="e.g. Business Analyst, Zenith Bank"></div>
+        <div class="field no-voice"><label>Dates</label><input type="text" id="r1-dates" placeholder="e.g. Jan 2022 – Present"></div>
+        <div class="field"><label>Main responsibilities <span class="label-hint">Be specific</span></label><textarea id="r1-resp" rows="3" placeholder="e.g. Managed client portfolios, built Excel models, coordinated with 4 departments..."></textarea></div>
+        <div class="field"><label>What did you deliver or accomplish?</label><textarea id="r1-wins" rows="3" placeholder="e.g. Reduced report turnaround by 2 days, onboarded 3 new clients..."></textarea></div>
+        <div class="field"><label>What did a typical day look like?</label><textarea id="r1-day" rows="2" placeholder="e.g. Morning standups, stakeholder calls, preparing decks..."></textarea></div>
+      </div>
+
+      <div style="margin-bottom: 2rem;">
+        <p style="font-size:0.78rem; font-weight:500; color:var(--muted); margin-bottom:1rem; letter-spacing:0.06em; text-transform:uppercase;">Previous role 1 <span style="font-weight:300; text-transform:none; letter-spacing:0;">(optional)</span></p>
+        <div class="field no-voice"><label>Job title & company</label><input type="text" id="r2-title" placeholder="e.g. Marketing Intern, Sterling Bank"></div>
+        <div class="field no-voice"><label>Dates</label><input type="text" id="r2-dates" placeholder="e.g. Jun 2020 – Dec 2021"></div>
+        <div class="field"><label>Key responsibilities & accomplishments</label><textarea id="r2-resp" rows="3" placeholder="e.g. Ran social media, organised client events, supported BD team with pitch decks..."></textarea></div>
+      </div>
+
+      <div style="margin-bottom: 2rem;">
+        <p style="font-size:0.78rem; font-weight:500; color:var(--muted); margin-bottom:1rem; letter-spacing:0.06em; text-transform:uppercase;">Previous role 2 <span style="font-weight:300; text-transform:none; letter-spacing:0;">(optional)</span></p>
+        <div class="field no-voice"><label>Job title & company</label><input type="text" id="r3-title" placeholder="e.g. Student Council President, UNILAG"></div>
+        <div class="field no-voice"><label>Dates</label><input type="text" id="r3-dates" placeholder="e.g. 2017 – 2019"></div>
+        <div class="field"><label>Key responsibilities & accomplishments</label><textarea id="r3-resp" rows="3" placeholder="e.g. Coordinated events for 2,000 students, managed a ₦500k budget..."></textarea></div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="section-header">
+        <div class="section-num">3</div>
+        <div>
+          <div class="section-title">Other Experience</div>
+          <div class="section-sub">Certifications, volunteering, side projects</div>
+        </div>
+      </div>
+
+      <div class="field"><label>Certifications or courses <span class="label-hint">Optional</span></label><textarea id="certs" rows="2" placeholder="e.g. Google PM Certificate (2022), CFA Level 1..."></textarea></div>
+      <div class="field"><label>Volunteering, side projects or personal work <span class="label-hint">Optional</span></label><textarea id="volunteer" rows="3" placeholder="e.g. Mentored 10 undergrads, built a side business, wrote a newsletter with 500 subscribers..."></textarea></div>
+
+      <div class="btn-row">
+        <button class="btn-ghost" onclick="goToStep(3)">Back</button>
+        <button class="btn-primary" onclick="goToStep(5)">Continue</button>
+      </div>
+    </div>
+
+    <!-- SCREEN 5: SKILLS CHECK -->
+    <div class="screen" id="screen-5">
+      <div class="screen-label">Step 5 of 5</div>
+      <h2>Quick skills check.</h2>
+      <p class="sub">Yes or no. Answer honestly — things you did casually or just once still count. Say yes and we'll ask you to describe it briefly.</p>
+
+      <div id="yn-questions-container"></div>
+
+      <div class="btn-row">
+        <button class="btn-ghost" onclick="goBackFromSkills()">Back</button>
+        <button class="btn-gold" onclick="generateOutput()">✦ Generate my CV</button>
+      </div>
+    </div>
+
+    <!-- SCREEN 6: LOADING -->
+    <div class="screen" id="screen-6">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <div class="loading-label">Working on your story…</div>
+      </div>
+    </div>
+
+    <!-- SCREEN 7: OUTPUT -->
+    <div class="screen" id="screen-7">
+      <div class="screen-label">Your results</div>
+      <h2 id="output-greeting">Here's your CV content.</h2>
+      <p class="sub">This is how your experience looks when it's positioned for your target role. Copy it directly into your CV.</p>
+
+      <div class="output-section">
+        <div class="output-label">CV — Work Experience</div>
+        <div class="output-actions">
+          <button class="copy-btn" onclick="copyCV()">Copy CV content</button>
+        </div>
+        <div class="cv-document">
+          <div class="cv-doc-header">
+            <div class="cv-doc-name" id="out-name"></div>
+            <div class="cv-doc-contact" id="out-contact"></div>
+          </div>
+          <div class="cv-doc-body">
+            <div class="cv-section-title">Summary</div>
+            <div class="cv-summary-text" id="out-summary"></div>
+            <div class="cv-section-title">Work Experience</div>
+            <div id="out-roles"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="output-section">
+        <div class="output-label">Cover Letter</div>
+        <div class="output-actions">
+          <button class="copy-btn" onclick="copyCL()">Copy cover letter</button>
+        </div>
+        <div class="cover-letter-doc">
+          <div class="cl-header">
+            <div class="cl-name" id="cl-name"></div>
+            <div class="cl-contact" id="cl-contact"></div>
+          </div>
+          <div class="cl-body" id="cl-body"></div>
+        </div>
+      </div>
+
+      <div class="notice">
+        <strong>Next step:</strong> Read through and edit anything that doesn't sound exactly like you. Add specific numbers or names where you can. The best CV is accurate and authentically yours.
+      </div>
+
+      <div class="btn-row" style="margin-top: 1.5rem;">
+        <button class="btn-ghost" onclick="startOver()">Start over</button>
+      </div>
+    </div>
+
+  </div><!-- /app -->
+
+  <!-- ═══ VOICE MODAL ═══ -->
+  <div class="voice-modal-overlay" id="voice-modal-overlay" style="display:none;" onclick="handleOverlayClick(event)">
+    <div class="voice-modal" id="voice-modal">
+      <div class="voice-modal-header">
+        <span class="voice-modal-title" id="voice-modal-title">Voice input</span>
+        <button class="voice-modal-close" onclick="closeVoiceModal()">✕</button>
+      </div>
+      <div class="voice-modal-body">
+
+        <!-- Status bar -->
+        <div class="voice-status">
+          <div class="voice-status-dot" id="vs-dot"></div>
+          <span id="vs-label">Ready to record</span>
+          <span class="voice-timer" id="vs-timer">0:00</span>
+        </div>
+
+        <!-- Waveform visualiser -->
+        <div class="voice-waveform" id="waveform"></div>
+
+        <!-- Controls -->
+        <div class="voice-controls" id="voice-controls">
+          <!-- shown dynamically -->
+        </div>
+
+        <!-- Transcript -->
+        <div id="transcript-area" style="display:none;">
+          <div class="voice-transcript-label">Edit your recording before adding it</div>
+          <textarea class="voice-transcript" id="voice-transcript-text" rows="4" placeholder="Your spoken text will appear here. Edit as needed."></textarea>
+        </div>
+
+      </div>
+      <div class="voice-modal-footer">
+        <button class="btn-discard" onclick="closeVoiceModal()">Discard</button>
+        <button class="btn-complete" id="btn-complete-voice" onclick="completeVoice()" disabled>Add to field</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main-app -->
+
+<script>
+// ─── STATE ───
+const state = {
+  path: null,
+  role: null,
+  jdMode: 'yes',
+  user: { firstName: '', lastName: '', email: '', phone: '', experience: '' }
+};
+
+const ROLE_LABELS = {
+  lawyer:     'Lawyer / Legal Associate',
+  consultant: 'Management Consultant',
+  bizdev:     'Business Development / Sales Associate',
+  marketing:  'Marketing',
+  pm:         'Product / Project Manager'
+};
+
+// ─── SPLASH SEQUENCE ───
+const rawText = "I helped onboard new clients, put together pitch decks for the sales team, and did a lot of research on competitor pricing. I also trained two new joiners and ran our weekly pipeline review…";
+
+let charIndex = 0;
+
+function typeChar() {
+  const el = document.getElementById('typed-text');
+  if (!el) return;
+  if (charIndex < rawText.length) {
+    const cursor = el.querySelector('.cursor');
+    if (cursor) cursor.remove();
+    el.textContent += rawText[charIndex];
+    el.innerHTML += '<span class="cursor"></span>';
+    charIndex++;
+    setTimeout(typeChar, 28 + Math.random() * 20);
+  } else {
+    // Show CV preview after typing done
+    setTimeout(() => {
+      document.getElementById('cv-preview').classList.add('visible');
+      setTimeout(() => document.getElementById('b1').classList.add('in'), 200);
+      setTimeout(() => document.getElementById('b2').classList.add('in'), 500);
+      setTimeout(() => document.getElementById('b3').classList.add('in'), 800);
+      setTimeout(showPhase3, 2200);
+    }, 400);
+  }
+}
+
+function showPhase(id) {
+  document.querySelectorAll('.splash-phase').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showPhase3() {
+  showPhase('phase3');
+}
+
+function startApp() {
+  document.getElementById('splash').style.opacity = '0';
+  document.getElementById('splash').style.transition = 'opacity 0.5s ease';
+  setTimeout(() => {
+    document.getElementById('splash').style.display = 'none';
+    document.getElementById('main-app').classList.add('visible');
+  }, 500);
+}
+
+// Start splash
+setTimeout(() => {
+  showPhase('phase2');
+  setTimeout(typeChar, 600);
+}, 2200);
+
+// ─── NAVIGATION ───
+function setProgress(pct) {
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goToStep(step) {
+  const prog = { 0:0, 1:15, 2:30, 3:45, 4:60, 5:75, 6:88, 7:100 };
+  setProgress(prog[step] || 0);
+
+  if (step === 0) { showScreen('screen-0'); return; }
+  if (step === 1) { showScreen('screen-1'); return; }
+  if (step === 2) { showScreen('screen-2'); return; }
+  if (step === 3) { showScreen('screen-3'); return; }
+  if (step === 4) {
+    if (state.path === 'has-cv') showScreen('screen-4a');
+    else showScreen('screen-4b');
+    return;
+  }
+  if (step === 5) { loadSkillsQuestions(); showScreen('screen-5'); return; }
+  if (step === 6) { showScreen('screen-6'); return; }
+  if (step === 7) { showScreen('screen-7'); return; }
+}
+
+function goBackFromSkills() { goToStep(4); }
+
+// ─── SIGN IN ───
+function handleSignIn() {
+  const fn  = document.getElementById('si-firstname').value.trim();
+  const ln  = document.getElementById('si-lastname').value.trim();
+  const em  = document.getElementById('si-email').value.trim();
+  const ph  = document.getElementById('si-phone').value.trim();
+  const exp = document.getElementById('si-experience').value;
+
+  if (!fn) { alert('Please enter your first name.'); return; }
+
+  state.user = { firstName: fn, lastName: ln, email: em, phone: ph, experience: exp };
+  document.getElementById('header-user').textContent = fn;
+  goToStep(1);
+}
+
+// ─── PATH & ROLE ───
+function selectPath(path) {
+  state.path = path;
+  document.getElementById('card-has-cv').classList.toggle('selected', path === 'has-cv');
+  document.getElementById('card-no-cv').classList.toggle('selected',  path === 'no-cv');
+  document.getElementById('btn-path-next').disabled = false;
+}
+
+function selectRole(role) {
+  state.role = role;
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('role-' + role).classList.add('selected');
+  document.getElementById('btn-role-next').disabled = false;
+}
+
+// ─── JD TOGGLE ───
+function toggleJD(mode) {
+  state.jdMode = mode;
+  document.getElementById('jd-yes-btn').classList.toggle('active', mode === 'yes');
+  document.getElementById('jd-no-btn').classList.toggle('active',  mode === 'no');
+  document.getElementById('jd-input-area').style.display = mode === 'yes' ? 'block' : 'none';
+  document.getElementById('jd-skip-area').style.display  = mode === 'no'  ? 'block' : 'none';
+}
+
+// ─── SKILLS QUESTIONS ───
+const SKILLS_QUESTIONS = {
+  lawyer: [
+    { q: "Have you ever drafted, reviewed or proofread any kind of written document — legal or otherwise?", followup: "Briefly describe what it was and what you did with it." },
+    { q: "Have you ever researched a topic and presented findings to someone — a manager, lecturer, or client?", followup: "What was the topic and what did you do with the findings?" },
+    { q: "Have you ever negotiated or mediated a disagreement between two parties?", followup: "What was the situation and how did it resolve?" },
+    { q: "Have you ever had to explain something complex to someone with no background in it?", followup: "What was it and how did you break it down?" },
+    { q: "Have you ever worked to a strict deadline with real consequences if you missed it?", followup: "What was the deadline and what did you do to meet it?" },
+    { q: "Have you ever been responsible for something where attention to detail was critical?", followup: "What was it and how did you ensure accuracy?" },
+    { q: "Have you ever worked on anything involving contracts, policies, regulations or compliance?", followup: "Describe what you were involved in." },
+    { q: "Have you ever advocated for a position or argued a case — formally or informally?", followup: "What was the situation?" },
+    { q: "Have you ever used Microsoft Word, Excel or any legal or document management software?", followup: "Which tools and how did you use them?" },
+    { q: "Have you ever taken on responsibility that was above your formal job title or seniority?", followup: "What did you take on and why?" }
+  ],
+  consultant: [
+    { q: "Have you ever identified a problem in a process or system and proposed a solution?", followup: "What was the problem and what did you recommend?" },
+    { q: "Have you ever built or worked with spreadsheets, models or data to support a decision?", followup: "What was the context and what did the analysis inform?" },
+    { q: "Have you ever put together a presentation or report for a senior audience?", followup: "What was it for and what was the outcome?" },
+    { q: "Have you ever worked on a project that had multiple stakeholders with different priorities?", followup: "How did you manage it?" },
+    { q: "Have you ever had to learn about an industry or topic quickly from scratch?", followup: "What was it and how did you get up to speed?" },
+    { q: "Have you ever worked in a team to deliver something under a tight deadline?", followup: "What was the project and what was your role?" },
+    { q: "Have you ever interviewed people, run surveys, or gathered data to understand something?", followup: "What was the goal and what did you find?" },
+    { q: "Have you ever had to change your approach mid-project because something wasn't working?", followup: "Describe the situation." },
+    { q: "Have you ever benchmarked one thing against another — companies, products, processes or competitors?", followup: "What were you comparing and what was the output?" },
+    { q: "Have you ever persuaded someone to change their mind using evidence or logic?", followup: "What was the situation?" }
+  ],
+  bizdev: [
+    { q: "Have you ever pitched an idea, product or service to someone and got a yes?", followup: "What were you pitching and to whom?" },
+    { q: "Have you ever built or maintained a relationship with a client, partner or customer?", followup: "Describe the relationship and what you did to manage it." },
+    { q: "Have you ever generated leads — found potential clients or partners through research or outreach?", followup: "How did you find them and what did you do?" },
+    { q: "Have you ever negotiated terms, pricing, or a deal of any kind?", followup: "What was it and how did it go?" },
+    { q: "Have you ever consistently hit a target or goal — sales, academic, personal or otherwise?", followup: "What was the target and how did you achieve it?" },
+    { q: "Have you ever used CRM software or tracked interactions with multiple clients or contacts?", followup: "Which tools and how did you use them?" },
+    { q: "Have you ever done market research or competitive analysis?", followup: "What was the context and what did you produce?" },
+    { q: "Have you ever convinced someone to do something by understanding what mattered to them?", followup: "Describe the situation." },
+    { q: "Have you ever written a proposal, pitch deck or business case?", followup: "What was it for and what was the result?" },
+    { q: "Have you ever managed a pipeline, tracker or list of opportunities?", followup: "What did it look like and how did you use it?" }
+  ],
+  marketing: [
+    { q: "Have you ever created content for any platform — social media, blog, email, video?", followup: "What type of content and what was the goal?" },
+    { q: "Have you ever run or contributed to a campaign — online or offline?", followup: "Describe the campaign and your role." },
+    { q: "Have you ever tracked or analysed the performance of content or a campaign?", followup: "What did you measure and what did you find?" },
+    { q: "Have you ever managed or grown a social media account?", followup: "Which platform, starting point, and what happened?" },
+    { q: "Have you ever written copy intended to persuade or convert?", followup: "What was it for and how did it perform?" },
+    { q: "Have you ever worked with a brand — maintaining its look, tone or guidelines?", followup: "Describe the brand and your role." },
+    { q: "Have you ever used marketing tools — Mailchimp, Canva, HubSpot, Google Analytics, Meta Ads?", followup: "Which ones and how did you use them?" },
+    { q: "Have you ever done customer or audience research — interviews, surveys, feedback collection?", followup: "What was it for and what did you learn?" },
+    { q: "Have you ever collaborated with a designer, developer or external agency?", followup: "What was the project and how did you work together?" },
+    { q: "Have you ever organised an event — physical or virtual — and promoted it?", followup: "What was the event and how did you handle it?" }
+  ],
+  pm: [
+    { q: "Have you ever managed a project from start to finish — even a small one?", followup: "What was the project, how long did it run, and how did it go?" },
+    { q: "Have you ever coordinated tasks across multiple people or teams?", followup: "How many people and what were you coordinating?" },
+    { q: "Have you ever used project management tools like Trello, Asana, Jira or Notion?", followup: "Which tools and what were you managing?" },
+    { q: "Have you ever created a timeline, roadmap or project plan?", followup: "What was it for and how did it go?" },
+    { q: "Have you ever managed a budget — even informally?", followup: "How much and what was the context?" },
+    { q: "Have you ever identified a risk or problem early and taken action before it became serious?", followup: "Describe the situation." },
+    { q: "Have you ever communicated project status or progress to stakeholders?", followup: "Who were the stakeholders and how did you communicate?" },
+    { q: "Have you ever had to reprioritise mid-project because of a change in direction?", followup: "What changed and how did you adapt?" },
+    { q: "Have you ever gathered requirements or feedback from users before building or designing something?", followup: "What was the project and how did you gather input?" },
+    { q: "Have you ever run a meeting, workshop or training session?", followup: "What was it for and how did it go?" }
+  ]
+};
+
+function loadSkillsQuestions() {
+  const questions = SKILLS_QUESTIONS[state.role] || [];
+  const container = document.getElementById('yn-questions-container');
+  container.innerHTML = '';
+  questions.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'yn-question';
+    div.id = 'yn-' + i;
+    div.innerHTML = `
+      <div class="yn-text">${i + 1}. ${item.q}</div>
+      <div class="yn-buttons">
+        <button class="yn-btn yes" onclick="answerYN(${i}, true)">Yes</button>
+        <button class="yn-btn no"  onclick="answerYN(${i}, false)">No</button>
+      </div>
+      <div class="yn-followup" id="yn-followup-${i}">
+        <label style="font-size:0.78rem; color:var(--muted); margin-bottom:0.3rem; display:block;">${item.followup}</label>
+        <textarea id="yn-detail-${i}" rows="2" placeholder="Briefly describe..."></textarea>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+function answerYN(index, isYes) {
+  const qDiv     = document.getElementById('yn-' + index);
+  const followup = document.getElementById('yn-followup-' + index);
+  qDiv.classList.add('answered');
+  qDiv.querySelector('.yn-btn.yes').classList.toggle('active', isYes);
+  qDiv.querySelector('.yn-btn.no').classList.toggle('active', !isYes);
+  if (isYes) {
+    followup.classList.add('visible');
+    // Attach mic to the textarea inside this followup
+    const ta = document.getElementById('yn-detail-' + index);
+    if (ta) addMicToTextarea(ta);
+  } else {
+    followup.classList.remove('visible');
+  }
+}
+
+// ─── BUILD PROMPT ───
+function buildPrompt() {
+  const { firstName, lastName, experience } = state.user;
+  const fullName = `${firstName} ${lastName}`.trim();
+  const role     = ROLE_LABELS[state.role];
+  const jdText   = state.jdMode === 'yes' ? (document.getElementById('jd-text')?.value || '') : '';
+  const jdSection = jdText
+    ? `JOB DESCRIPTION:\n${jdText}`
+    : `No specific JD provided. Use standard industry expectations for a ${role} role.`;
+
+  let expSection = '';
+  if (state.path === 'has-cv') {
+    expSection = `CANDIDATE'S EXISTING CV:\n${document.getElementById('cv-text')?.value || ''}`;
+  } else {
+    expSection = `CANDIDATE INFORMATION:
+Education: ${document.getElementById('edu-level')?.value || ''} ${document.getElementById('edu-extra')?.value || ''}
+Most recent role: ${document.getElementById('r1-title')?.value || ''} (${document.getElementById('r1-dates')?.value || ''})
+Responsibilities: ${document.getElementById('r1-resp')?.value || ''}
+Accomplishments: ${document.getElementById('r1-wins')?.value || ''}
+Day-to-day: ${document.getElementById('r1-day')?.value || ''}
+Previous role 1: ${document.getElementById('r2-title')?.value || ''} (${document.getElementById('r2-dates')?.value || ''}) — ${document.getElementById('r2-resp')?.value || ''}
+Previous role 2: ${document.getElementById('r3-title')?.value || ''} (${document.getElementById('r3-dates')?.value || ''}) — ${document.getElementById('r3-resp')?.value || ''}
+Certifications: ${document.getElementById('certs')?.value || ''}
+Volunteering/projects: ${document.getElementById('volunteer')?.value || ''}`;
+  }
+
+  const questions = SKILLS_QUESTIONS[state.role] || [];
+  let skillsSection = 'SKILLS CHECK:\n';
+  questions.forEach((item, i) => {
+    const isYes  = document.getElementById('yn-' + i)?.querySelector('.yn-btn.yes')?.classList.contains('active');
+    const detail = document.getElementById('yn-detail-' + i)?.value || '';
+    if (isYes !== undefined) {
+      skillsSection += `Q: ${item.q}\nA: ${isYes ? 'Yes' : 'No'}${isYes && detail ? '. Detail: ' + detail : ''}\n`;
+    }
+  });
+
+  const expTone = experience === '0-2'
+    ? 'This is an early-career candidate (0–2 years). Use confident but grounded language. Focus on initiative, learning speed, and tangible contributions even if small in scale. Avoid making them sound more senior than they are.'
+    : experience === '2-5'
+    ? 'This candidate has 2–5 years of experience. Use assured, professional language. Show growing ownership and independent delivery. Highlight results and relationships.'
+    : experience === '5-10'
+    ? 'This is a mid-level professional (5–10 years). Use authoritative, accomplished language. Emphasise leadership, strategic thinking, and measurable impact. Show depth of expertise.'
+    : 'This is a senior professional (10+ years). Use executive-level language. Emphasise leadership, transformation, and high-stakes impact. Show breadth of influence and commercial acumen.';
+
+  return `You are an expert CV writer who knows exactly what hiring managers want when hiring for ${role} roles.
+
+CANDIDATE NAME: ${fullName}
+EXPERIENCE LEVEL: ${experience} years
+TARGET ROLE: ${role}
+
+TONE GUIDANCE: ${expTone}
+
+${jdSection}
+
+${expSection}
+
+${skillsSection}
+
+WRITING STANDARDS — follow these exactly:
+- Study the style of the best consulting and professional CVs: action verb + context + concrete outcome
+- NO buzzwords: no "spearheaded", "leveraged synergies", "dynamic", "passionate", "results-driven"
+- Every bullet starts with a strong past-tense verb (Built, Led, Designed, Delivered, Managed, Secured, etc.)
+- Include numbers, percentages, scale or time wherever possible
+- Surface experiences the candidate may have undervalued — including projects, volunteering, academic work
+- Write in plain, confident English that sounds like a real person
+- Each bullet: one sentence, 15–25 words max
+
+OUTPUT FORMAT — return exactly this structure, nothing else:
+
+SUMMARY:
+[2–3 sentence professional summary tailored to the ${role} role. Specific, not generic. Mention their experience level and one or two standout qualities.]
+
+ROLES:
+For each role the candidate has (most recent first), output:
+ROLE_TITLE: [job title]
+COMPANY: [company name]
+DATES: [dates]
+BULLETS:
+- [bullet]
+- [bullet]
+- [bullet max, 2 minimum — only include what's genuinely relevant for a ${role} role]
+
+Give the most relevant role 3 bullets. For less relevant previous roles, use only 1–2 bullets if that's all that's genuinely relevant. Do not pad with weak bullets.
+
+COVER_LETTER:
+[Full cover letter. 3–4 paragraphs. Opens with something specific and human — not "I am writing to apply". Each paragraph focuses on one concrete experience. Confident, natural close. Sounds like ${firstName} wrote it, not an AI. Tone matches their experience level.]
+
+Return only the structured output above. No preamble, no commentary.`;
+}
+
+// ─── GENERATE ───
+async function generateOutput() {
+  goToStep(6);
+  setProgress(88);
+
+  const prompt = buildPrompt();
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': 'YOUR_API_KEY_HERE',
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1800,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content?.map(b => b.text || '').join('') || '';
+    parseAndRender(text);
+
+  } catch (err) {
+    console.error(err);
+    parseAndRender(getFallback());
+  }
+
+  goToStep(7);
+  setProgress(100);
+}
+
+// ─── PARSE OUTPUT ───
+function parseAndRender(text) {
+  const { firstName, lastName, email, phone } = state.user;
+  const fullName = `${firstName} ${lastName}`.trim();
+
+  // Header
+  document.getElementById('out-name').textContent = fullName.toUpperCase();
+  const contactParts = [email, phone].filter(Boolean);
+  document.getElementById('out-contact').innerHTML = contactParts.join(' &nbsp;|&nbsp; ');
+  document.getElementById('cl-name').textContent   = fullName;
+  document.getElementById('cl-contact').textContent = contactParts.join('  ·  ');
+  document.getElementById('output-greeting').textContent = `Here's your CV, ${firstName}.`;
+
+  // Summary
+  const summaryMatch = text.match(/SUMMARY:\s*([\s\S]*?)(?=ROLES:|$)/);
+  document.getElementById('out-summary').textContent = summaryMatch ? summaryMatch[1].trim() : '';
+
+  // Roles
+  const rolesContainer = document.getElementById('out-roles');
+  rolesContainer.innerHTML = '';
+  const rolesSection = text.match(/ROLES:\s*([\s\S]*?)(?=COVER_LETTER:|$)/);
+
+  if (rolesSection) {
+    const rolesText = rolesSection[1];
+    const roleBlocks = rolesText.split(/(?=ROLE_TITLE:)/g).filter(b => b.trim());
+
+    roleBlocks.forEach(block => {
+      const titleMatch   = block.match(/ROLE_TITLE:\s*(.+)/);
+      const companyMatch = block.match(/COMPANY:\s*(.+)/);
+      const datesMatch   = block.match(/DATES:\s*(.+)/);
+      const bulletsMatch = block.match(/BULLETS:\s*([\s\S]*?)(?=ROLE_TITLE:|$)/);
+
+      if (!titleMatch) return;
+
+      const bullets = bulletsMatch
+        ? bulletsMatch[1].split('\n')
+            .map(l => l.replace(/^[-•]\s*/, '').trim())
+            .filter(Boolean)
+        : [];
+
+      const div = document.createElement('div');
+      div.className = 'cv-role-block';
+      div.innerHTML = `
+        <div class="cv-role-header">
+          <span class="cv-role-title">${titleMatch[1].trim()}</span>
+          <span class="cv-role-dates">${datesMatch ? datesMatch[1].trim() : ''}</span>
+        </div>
+        <div class="cv-role-company">${companyMatch ? companyMatch[1].trim() : ''}</div>
+        <ul class="cv-role-bullets">
+          ${bullets.map(b => `<li>${b}</li>`).join('')}
+        </ul>`;
+      rolesContainer.appendChild(div);
+    });
+  }
+
+  // Cover letter
+  const clMatch = text.match(/COVER_LETTER:\s*([\s\S]*?)$/);
+  document.getElementById('cl-body').textContent = clMatch ? clMatch[1].trim() : '';
+}
+
+// ─── COPY ───
+function copyCV() {
+  const name    = document.getElementById('out-name').textContent;
+  const contact = document.getElementById('out-contact').textContent;
+  const summary = document.getElementById('out-summary').textContent;
+  let text = `${name}\n${contact}\n\nSUMMARY\n${summary}\n\nWORK EXPERIENCE\n`;
+
+  document.querySelectorAll('.cv-role-block').forEach(block => {
+    const title   = block.querySelector('.cv-role-title')?.textContent || '';
+    const dates   = block.querySelector('.cv-role-dates')?.textContent || '';
+    const company = block.querySelector('.cv-role-company')?.textContent || '';
+    const bullets = [...block.querySelectorAll('.cv-role-bullets li')].map(li => `• ${li.textContent}`).join('\n');
+    text += `\n${title}  ${dates}\n${company}\n${bullets}\n`;
+  });
+
+  navigator.clipboard.writeText(text).then(() => alert('CV content copied!'));
+}
+
+function copyCL() {
+  const name    = document.getElementById('cl-name').textContent;
+  const contact = document.getElementById('cl-contact').textContent;
+  const body    = document.getElementById('cl-body').textContent;
+  navigator.clipboard.writeText(`${name}\n${contact}\n\n${body}`).then(() => alert('Cover letter copied!'));
+}
+
+// ─── FALLBACK ───
+function getFallback() {
+  const fn = state.user.firstName || 'Candidate';
+  return `SUMMARY:
+Strategy-driven professional with a strong foundation in ${ROLE_LABELS[state.role] || 'business'} and a proven ability to deliver results across complex, multi-stakeholder environments. Known for translating analytical thinking into clear, actionable outputs that drive decisions at senior level.
+
+ROLES:
+ROLE_TITLE: Business Analyst
+COMPANY: Zenith Bank
+DATES: January 2022 – Present
+BULLETS:
+- Built quarterly financial models that reduced reporting preparation time from 3 days to 4 hours.
+- Coordinated a cross-functional project across 4 departments, delivering on time with no budget overrun.
+- Prepared client-facing reports and briefing notes presented directly to C-suite stakeholders.
+
+ROLE_TITLE: Marketing Intern
+COMPANY: Sterling Bank
+DATES: June 2020 – December 2021
+BULLETS:
+- Managed the bank's LinkedIn presence, growing followers by 40% over 6 months.
+- Supported the BD team by building pitch decks used in 5 successful client proposals.
+
+COVER_LETTER:
+Dear Hiring Manager,
+
+Most people think of their work history as a list of jobs. I think of it as a record of problems solved and trust earned — which is why I'm excited about this opportunity.
+
+In my current role at Zenith Bank, I've spent two years sitting at the intersection of data and decision-making. I built the financial models that leadership now relies on for quarterly planning, cutting the process from three days to half a day. More importantly, I learned how to communicate complex findings to non-technical audiences — a skill I'd bring directly to this role.
+
+Before that, I spent time in a marketing environment where I learned what it takes to build a presence from scratch. Growing an audience by 40% in six months taught me that results come from consistency and iteration, not one-off efforts.
+
+I'd welcome the chance to discuss how my background maps to what you're building. Thank you for your time.
+
+Sincerely,
+${fn}`;
+}
+
+// ─── RESET ───
+function startOver() {
+  state.path = null; state.role = null; state.jdMode = 'yes';
+  document.querySelectorAll('.card, .role-btn').forEach(c => c.classList.remove('selected'));
+  document.getElementById('btn-path-next').disabled = true;
+  document.getElementById('btn-role-next').disabled = true;
+  toggleJD('yes');
+  setProgress(0);
+  goToStep(0);
+}
+
+// ════════════════════════════════════════════
+// VOICE RECORDING SYSTEM
+// ════════════════════════════════════════════
+
+const MIC_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/></svg>`;
+
+const STOP_SVG  = `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>`;
+const PAUSE_SVG = `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="3" width="4" height="18" rx="1"/><rect x="15" y="3" width="4" height="18" rx="1"/></svg>`;
+const RESUME_SVG= `<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>`;
+
+let voiceState = {
+  mediaRecorder: null,
+  audioChunks: [],
+  recognition: null,
+  transcript: '',
+  isRecording: false,
+  isPaused: false,
+  timerInterval: null,
+  elapsedSeconds: 0,
+  targetFieldId: null,
+  targetFieldLabel: null,
+  analyser: null,
+  audioCtx: null,
+  waveInterval: null,
+  stream: null
+};
+
+// ── Add mic button to a field ──
+function makeVoiceField(fieldEl) {
+  const input = fieldEl.querySelector('input[type="text"], input[type="email"], input[type="tel"], textarea');
+  if (!input) return;
+
+  fieldEl.classList.add('field-with-voice');
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'voice-btn';
+  btn.title = 'Record your answer';
+  btn.innerHTML = MIC_SVG;
+
+  const labelEl = fieldEl.querySelector('label');
+  const labelText = labelEl ? labelEl.textContent.replace(/\(.*?\)/g, '').trim() : 'this field';
+
+  btn.addEventListener('click', () => openVoiceModal(input.id || input, labelText));
+  fieldEl.appendChild(btn);
+}
+
+// ── Apply mic buttons to all relevant fields, skipping no-voice ──
+function attachVoiceButtons() {
+  document.querySelectorAll('.field').forEach(f => {
+    // Skip fields explicitly marked no-voice
+    if (f.classList.contains('no-voice')) return;
+    // Skip if already done
+    if (f.classList.contains('field-with-voice')) return;
+    const hasInput = f.querySelector('input[type="text"], input[type="email"], input[type="tel"], textarea');
+    if (hasInput) makeVoiceField(f);
+  });
+}
+
+// ── Add mic to a standalone textarea (used for YN followups) ──
+function addMicToTextarea(textarea) {
+  if (!textarea || textarea.dataset.micAdded) return;
+  textarea.dataset.micAdded = 'true';
+
+  const wrapper = document.createElement('div');
+  wrapper.style.position = 'relative';
+  textarea.parentNode.insertBefore(wrapper, textarea);
+  wrapper.appendChild(textarea);
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'voice-btn';
+  btn.title = 'Record your answer';
+  btn.innerHTML = MIC_SVG;
+  btn.style.bottom = '8px';
+  btn.style.right  = '8px';
+  btn.style.position = 'absolute';
+
+  const labelText = textarea.closest('.yn-followup')?.querySelector('label')?.textContent || 'your answer';
+  btn.addEventListener('click', () => openVoiceModal(textarea.id, labelText));
+
+  textarea.style.paddingRight = '2.8rem';
+  wrapper.appendChild(btn);
+}
+
+// Re-attach after screen transitions (since some screens render dynamically)
+const _origGoToStep = goToStep;
+
+// ── Open modal ──
+function openVoiceModal(fieldIdOrEl, label) {
+  voiceState.targetFieldId = typeof fieldIdOrEl === 'string' ? fieldIdOrEl : fieldIdOrEl.id;
+  voiceState.targetFieldLabel = label;
+  voiceState.transcript = '';
+  voiceState.elapsedSeconds = 0;
+
+  document.getElementById('voice-modal-title').textContent = `Record: ${label.substring(0, 50)}`;
+  document.getElementById('vs-label').textContent = 'Ready to record';
+  document.getElementById('vs-dot').className = 'voice-status-dot';
+  document.getElementById('vs-timer').textContent = '0:00';
+  document.getElementById('voice-transcript-text').value = '';
+  document.getElementById('transcript-area').style.display = 'none';
+  document.getElementById('btn-complete-voice').disabled = true;
+
+  buildWaveform();
+  renderControls('idle');
+
+  document.getElementById('voice-modal-overlay').style.display = 'flex';
+  startRecording();
+}
+
+function closeVoiceModal() {
+  stopEverything();
+  document.getElementById('voice-modal-overlay').style.display = 'none';
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('voice-modal-overlay')) closeVoiceModal();
+}
+
+// ── Waveform ──
+function buildWaveform() {
+  const wf = document.getElementById('waveform');
+  wf.innerHTML = '';
+  const durs   = [0.5, 0.6, 0.45, 0.7, 0.55, 0.65, 0.5, 0.6, 0.48, 0.7, 0.52, 0.63, 0.58, 0.45, 0.67, 0.53, 0.6, 0.5, 0.68, 0.55];
+  const maxes  = [14, 20, 12, 26, 18, 24, 10, 22, 16, 28, 14, 20, 24, 12, 26, 18, 22, 16, 24, 18];
+  for (let i = 0; i < 20; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'wave-bar';
+    bar.id = `wb-${i}`;
+    bar.style.setProperty('--dur', durs[i] + 's');
+    bar.style.setProperty('--max', maxes[i] + 'px');
+    wf.appendChild(bar);
+  }
+}
+
+function activateWave(active) {
+  document.querySelectorAll('.wave-bar').forEach(b => {
+    if (active) b.classList.add('active');
+    else        b.classList.remove('active');
+  });
+}
+
+// ── Controls renderer ──
+function renderControls(mode) {
+  const ctrl = document.getElementById('voice-controls');
+  ctrl.innerHTML = '';
+
+  if (mode === 'idle') {
+    // auto-start so nothing shown until recording begins
+    return;
+  }
+
+  if (mode === 'recording') {
+    ctrl.innerHTML = `
+      <button class="vc-btn" onclick="pauseRecording()">${PAUSE_SVG} Pause</button>
+      <button class="vc-btn danger" onclick="stopRecording()">${STOP_SVG} Stop</button>`;
+  }
+
+  if (mode === 'paused') {
+    ctrl.innerHTML = `
+      <button class="vc-btn" onclick="resumeRecording()">${RESUME_SVG} Resume</button>
+      <button class="vc-btn danger" onclick="stopRecording()">${STOP_SVG} Stop & review</button>`;
+  }
+
+  if (mode === 'stopped') {
+    ctrl.innerHTML = `
+      <button class="vc-btn" onclick="reRecord()">↺ Re-record</button>`;
+  }
+}
+
+// ── Timer ──
+function startTimer() {
+  clearInterval(voiceState.timerInterval);
+  voiceState.timerInterval = setInterval(() => {
+    if (!voiceState.isPaused) {
+      voiceState.elapsedSeconds++;
+      const m = Math.floor(voiceState.elapsedSeconds / 60);
+      const s = voiceState.elapsedSeconds % 60;
+      document.getElementById('vs-timer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    }
+  }, 1000);
+}
+
+function stopTimer() { clearInterval(voiceState.timerInterval); }
+
+// ── Start recording ──
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    voiceState.stream = stream;
+    voiceState.audioChunks = [];
+    voiceState.transcript  = '';
+    voiceState.isPaused    = false;
+    voiceState.isRecording = true;
+
+    // Web Speech API for live transcription
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SR) {
+      const rec = new SR();
+      rec.continuous    = true;
+      rec.interimResults = true;
+      rec.lang           = 'en-GB';
+
+      rec.onresult = (e) => {
+        let interim = '';
+        let final   = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const t = e.results[i][0].transcript;
+          if (e.results[i].isFinal) final += t + ' ';
+          else interim += t;
+        }
+        if (final) voiceState.transcript += final;
+        document.getElementById('voice-transcript-text').value = voiceState.transcript + interim;
+      };
+
+      rec.onerror = () => {};
+      rec.onend   = () => { if (voiceState.isRecording && !voiceState.isPaused) rec.start(); };
+      rec.start();
+      voiceState.recognition = rec;
+    }
+
+    // MediaRecorder for audio backup
+    const mr = new MediaRecorder(stream);
+    mr.ondataavailable = e => { if (e.data.size > 0) voiceState.audioChunks.push(e.data); };
+    mr.start(200);
+    voiceState.mediaRecorder = mr;
+
+    setRecordingUI('recording');
+    startTimer();
+    activateWave(true);
+
+  } catch (err) {
+    setStatus('done', 'Microphone access denied. Please allow microphone access and try again.');
+  }
+}
+
+function setRecordingUI(mode) {
+  const dot   = document.getElementById('vs-dot');
+  const label = document.getElementById('vs-label');
+
+  if (mode === 'recording') {
+    dot.className   = 'voice-status-dot live';
+    label.textContent = 'Recording…';
+    renderControls('recording');
+    document.querySelector('.voice-btn.recording')?.classList.remove('recording');
+  }
+  if (mode === 'paused') {
+    dot.className   = 'voice-status-dot paused';
+    label.textContent = 'Paused';
+    renderControls('paused');
+    activateWave(false);
+  }
+  if (mode === 'stopped') {
+    dot.className   = 'voice-status-dot done';
+    label.textContent = 'Recording complete — review and edit below';
+    renderControls('stopped');
+    activateWave(false);
+    document.getElementById('transcript-area').style.display = 'block';
+    document.getElementById('btn-complete-voice').disabled = false;
+  }
+}
+
+function setStatus(type, msg) {
+  document.getElementById('vs-dot').className = 'voice-status-dot ' + (type === 'done' ? 'done' : '');
+  document.getElementById('vs-label').textContent = msg;
+}
+
+// ── Pause ──
+function pauseRecording() {
+  voiceState.isPaused = true;
+  if (voiceState.recognition) { try { voiceState.recognition.stop(); } catch(e){} }
+  if (voiceState.mediaRecorder?.state === 'recording') voiceState.mediaRecorder.pause();
+  setRecordingUI('paused');
+}
+
+// ── Resume ──
+function resumeRecording() {
+  voiceState.isPaused = false;
+  if (voiceState.recognition) {
+    try {
+      voiceState.recognition.onend = () => { if (voiceState.isRecording && !voiceState.isPaused) voiceState.recognition.start(); };
+      voiceState.recognition.start();
+    } catch(e){}
+  }
+  if (voiceState.mediaRecorder?.state === 'paused') voiceState.mediaRecorder.resume();
+  setRecordingUI('recording');
+  activateWave(true);
+}
+
+// ── Stop ──
+function stopRecording() {
+  voiceState.isRecording = false;
+  voiceState.isPaused    = false;
+  stopTimer();
+
+  if (voiceState.recognition) { try { voiceState.recognition.stop(); } catch(e){} voiceState.recognition = null; }
+  if (voiceState.mediaRecorder && voiceState.mediaRecorder.state !== 'inactive') voiceState.mediaRecorder.stop();
+  if (voiceState.stream) voiceState.stream.getTracks().forEach(t => t.stop());
+
+  // Populate transcript if speech recognition didn't fire (fallback)
+  const ta = document.getElementById('voice-transcript-text');
+  if (!ta.value.trim()) ta.value = voiceState.transcript || '';
+
+  setRecordingUI('stopped');
+}
+
+function stopEverything() {
+  voiceState.isRecording = false;
+  voiceState.isPaused    = false;
+  stopTimer();
+  activateWave(false);
+  if (voiceState.recognition) { try { voiceState.recognition.stop(); } catch(e){} voiceState.recognition = null; }
+  if (voiceState.mediaRecorder && voiceState.mediaRecorder.state !== 'inactive') voiceState.mediaRecorder.stop();
+  if (voiceState.stream) voiceState.stream.getTracks().forEach(t => t.stop());
+}
+
+// ── Re-record ──
+function reRecord() {
+  voiceState.transcript  = '';
+  voiceState.elapsedSeconds = 0;
+  document.getElementById('voice-transcript-text').value = '';
+  document.getElementById('transcript-area').style.display = 'none';
+  document.getElementById('btn-complete-voice').disabled = true;
+  document.getElementById('vs-timer').textContent = '0:00';
+  activateWave(false);
+  startRecording();
+}
+
+// ── Complete — transfer to field ──
+function completeVoice() {
+  const transcriptText = document.getElementById('voice-transcript-text').value.trim();
+  if (!transcriptText) return;
+
+  const fieldId = voiceState.targetFieldId;
+  const target  = document.getElementById(fieldId);
+
+  if (target) {
+    const existing = target.value.trim();
+    target.value   = existing ? existing + ' ' + transcriptText : transcriptText;
+    target.dispatchEvent(new Event('input'));
+
+    // Brief highlight on the field
+    target.style.borderColor = 'var(--gold)';
+    setTimeout(() => { target.style.borderColor = ''; }, 1500);
+  }
+
+  closeVoiceModal();
+}
+
+// ── Attach buttons after each goToStep ──
+// Wrap goToStep to re-attach after navigation
+const _goToStepOriginal = window.goToStep;
+const _attachAfterNav = () => setTimeout(attachVoiceButtons, 60);
+
+// Intercept via MutationObserver on .app so dynamic screens (YN questions) get buttons too
+const _observer = new MutationObserver(_attachAfterNav);
+document.addEventListener('DOMContentLoaded', () => {
+  const appEl = document.querySelector('.app');
+  if (appEl) _observer.observe(appEl, { childList: true, subtree: true });
+  attachVoiceButtons();
+});
+
+// Also run on initial load since DOMContentLoaded may have already fired
+attachVoiceButtons();
+setTimeout(attachVoiceButtons, 500);
+setTimeout(attachVoiceButtons, 1200);
+</script>
+</body>
+</html>
