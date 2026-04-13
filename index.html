@@ -921,6 +921,70 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; 
   padding: 0.15rem 0;
 }
 
+/* ─── ROLE CONFIRMATION SCREEN ─── */
+.confirmed-role-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+  animation: fadeUp 0.2s ease;
+}
+
+.confirmed-role-input {
+  flex: 1;
+  border: 1.5px solid var(--border);
+  border-radius: 5px;
+  padding: 0.65rem 0.9rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  color: var(--ink);
+  background: white;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.confirmed-role-input:focus { border-color: var(--gold); }
+
+.btn-remove-role {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: white;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  padding: 0;
+}
+
+.btn-remove-role:hover { border-color: #e53e3e; color: #e53e3e; background: #fff5f5; }
+
+.btn-add-role {
+  background: transparent;
+  border: 1.5px dashed var(--border);
+  border-radius: 5px;
+  padding: 0.65rem 1.25rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  color: var(--muted);
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  margin-top: 0.25rem;
+  transition: all 0.2s;
+}
+
+.btn-add-role:hover { border-color: var(--gold); color: var(--gold); background: #fdf8ee; }
+
+.roles-empty-hint {
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-style: italic;
+  margin-bottom: 1rem;
+}
+
 .yn-role-select {
   width: 100%;
   border: 1.5px solid var(--border);
@@ -1415,8 +1479,8 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; 
     <!-- SCREEN 4A: CV UPLOAD -->
     <div class="screen" id="screen-4a">
       <div class="screen-label">Step 4 of 5</div>
-      <h2>Upload your current CV</h2>
-      <p class="sub">Upload a PDF or Word file, or paste the text directly if that's easier.</p>
+      <h2>Upload your CV.</h2>
+      <p class="sub">We'll scan it and pull out your roles automatically.</p>
 
       <!-- Upload zone -->
       <div class="cv-upload-zone" id="cv-upload-zone" onclick="document.getElementById('cv-file-input').click()">
@@ -1428,25 +1492,32 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; 
           </svg>
         </div>
         <div class="cv-upload-label" id="cv-upload-label">Click to upload your CV</div>
-        <div class="cv-upload-hint">PDF, Word (.docx), or .txt — max 5MB</div>
-      </div>
-
-      <div class="cv-or-divider"><span>or paste it directly</span></div>
-
-      <div class="field no-voice">
-        <label>CV text <span class="label-hint">Copy and paste from your document</span></label>
-        <textarea id="cv-text" rows="12" placeholder="Paste your full CV here. Include job titles, companies, dates and bullet points..."></textarea>
+        <div class="cv-upload-hint">PDF, Word (.docx), or plain text — max 5MB</div>
       </div>
 
       <div id="cv-parse-status" style="display:none;" class="cv-parse-status"></div>
 
-      <div class="btn-row">
+      <!-- Hidden textarea stores extracted text for the AI — user never sees this -->
+      <textarea id="cv-text" style="display:none;"></textarea>
+
+      <!-- Paste fallback — collapsed by default -->
+      <div style="margin-top: 1.25rem;">
+        <button class="cv-paste-toggle" id="cv-paste-toggle" onclick="toggleCVPaste()">
+          Can't upload? Paste your CV text instead
+        </button>
+        <div id="cv-paste-area" style="display:none; margin-top: 0.75rem;">
+          <textarea id="cv-text-paste" rows="12"
+            placeholder="Paste your full CV here. Include job titles, companies, dates and bullet points..."
+            style="width:100%; border:1.5px solid var(--border); border-radius:5px; padding:0.75rem; font-family:'DM Sans',sans-serif; font-size:0.875rem; resize:vertical; outline:none;"
+            oninput="syncPasteToHidden(this.value)"></textarea>
+        </div>
+      </div>
+
+      <div class="btn-row" style="margin-top: 1.5rem;">
         <button class="btn-ghost" onclick="goToStep(3)">Back</button>
-        <button class="btn-primary" onclick="goToStep(5)">Continue</button>
+        <button class="btn-primary" onclick="proceedFromCV()">Continue</button>
       </div>
     </div>
-
-    <!-- SCREEN 4B: NO CV QUESTIONNAIRE -->
     <div class="screen" id="screen-4b">
       <div class="screen-label">Step 4 of 5</div>
       <h2>Tell us about your experience</h2>
@@ -1521,7 +1592,21 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; 
       </div>
     </div>
 
-    <!-- SCREEN 5: SKILLS CHECK -->
+    <!-- SCREEN 4C: CONFIRM ROLES (shown after CV upload) -->
+    <div class="screen" id="screen-4c">
+      <div class="screen-label">Almost there</div>
+      <h2>Confirm your roles.</h2>
+      <p class="sub">We found these roles in your CV. Edit, remove, or add any that are missing — these will appear in the skills check so you can match experiences to the right role.</p>
+
+      <div id="confirmed-roles-list"></div>
+
+      <button class="btn-add-role" onclick="addConfirmedRole()">+ Add a role</button>
+
+      <div class="btn-row" style="margin-top: 2rem;">
+        <button class="btn-ghost" onclick="goToStep(4)">Back</button>
+        <button class="btn-primary" onclick="proceedFromRoleConfirmation()">Continue</button>
+      </div>
+    </div>
     <div class="screen" id="screen-5">
       <div class="screen-label">Step 5 of 5</div>
       <h2>Quick skills check.</h2>
@@ -1726,61 +1811,240 @@ function showScreen(id) {
 }
 
 function goToStep(step) {
-  const prog = { 0:0, 1:15, 2:30, 3:45, 4:60, 5:75, 6:88, 7:100 };
-  setProgress(prog[step] || 0);
+  const prog = { 0:0, 1:15, 2:30, 3:45, 4:60, '4c':68, 5:75, 6:88, 7:100 };
+  setProgress(prog[step] ?? 0);
 
   if (step === 0) { showScreen('screen-0'); return; }
   if (step === 1) { showScreen('screen-1'); return; }
   if (step === 2) { showScreen('screen-2'); return; }
   if (step === 3) { showScreen('screen-3'); return; }
   if (step === 4) {
-    if (state.path === 'has-cv') showScreen('screen-4a');
-    else showScreen('screen-4b');
+    if (state.path === 'has-cv') {
+      state.cvRoles = []; // reset so re-upload triggers fresh extraction
+      showScreen('screen-4a');
+    } else {
+      showScreen('screen-4b');
+    }
     return;
   }
-  if (step === 5) { loadSkillsQuestions(); showScreen('screen-5'); return; }
-  if (step === 6) { showScreen('screen-6'); return; }
-  if (step === 7) { showScreen('screen-7'); return; }
+  if (step === '4c') { showRoleConfirmationScreen(); return; }
+  if (step === 5)    { loadSkillsQuestions(); showScreen('screen-5'); return; }
+  if (step === 6)    { showScreen('screen-6'); return; }
+  if (step === 7)    { showScreen('screen-7'); return; }
 }
 
-function goBackFromSkills() { goToStep(4); }
+function goBackFromSkills() {
+  if (state.path === 'has-cv') goToStep('4c');
+  else goToStep(4);
+}
+
+// ─── ROLE CONFIRMATION SCREEN ───
+function proceedFromCV() {
+  const cvText = document.getElementById('cv-text')?.value.trim();
+  if (!cvText) {
+    showPopup('Please upload your CV or paste your CV text before continuing.');
+    return;
+  }
+  // If roles were already extracted by AI on upload, go straight to confirmation
+  // If they pasted text manually (no upload), we need to run extraction now
+  if (state.cvRoles.length > 0) {
+    goToStep('4c');
+  } else {
+    // Pasted text path — extract via AI then go to confirmation
+    const status = document.getElementById('cv-parse-status');
+    status.style.display = 'block';
+    status.style.color   = '#7a7669';
+    status.textContent   = 'Scanning your CV for roles…';
+    extractRolesViaAI(cvText).then(roles => {
+      state.cvRoles = roles;
+      status.style.display = 'none';
+      goToStep('4c');
+    });
+  }
+}
+
+function showRoleConfirmationScreen() {
+  // Don't re-run extraction — roles are already in state.cvRoles from upload or paste
+  roleRowCount = 0;
+  renderConfirmedRoles();
+  setProgress(68);
+  showScreen('screen-4c');
+}
+
+function renderConfirmedRoles() {
+  const list = document.getElementById('confirmed-roles-list');
+  list.innerHTML = '';
+
+  const hasRealRoles = state.cvRoles.length > 0 &&
+    !(state.cvRoles.length === 2 && state.cvRoles[0] === 'My most recent role');
+
+  if (!hasRealRoles) {
+    list.innerHTML = `<p class="roles-empty-hint">We couldn't automatically detect roles from your CV. Add them manually below.</p>`;
+    state.cvRoles = [];
+  }
+
+  state.cvRoles.forEach((role, i) => addRoleRow(role, i));
+  roleRowCount = state.cvRoles.length;
+}
+
+let roleRowCount = 0;
+
+function addRoleRow(value, index) {
+  const list = document.getElementById('confirmed-roles-list');
+  const id   = index !== undefined ? index : roleRowCount++;
+  const row  = document.createElement('div');
+  row.className = 'confirmed-role-row';
+  row.id = `role-row-${id}`;
+  row.innerHTML = `
+    <input type="text" class="confirmed-role-input" id="role-input-${id}"
+           value="${(value || '').replace(/"/g, '&quot;')}"
+           placeholder="e.g. Consulting Associate, Zitere Social Enterprise">
+    <button class="btn-remove-role" onclick="removeRoleRow('role-row-${id}')" title="Remove">✕</button>`;
+  list.appendChild(row);
+  return row;
+}
+
+function removeRoleRow(rowId) {
+  document.getElementById(rowId)?.remove();
+}
+
+function addConfirmedRole() {
+  const row = addRoleRow('', roleRowCount);
+  setTimeout(() => row.querySelector('input')?.focus(), 50);
+}
+
+function proceedFromRoleConfirmation() {
+  const inputs = document.querySelectorAll('.confirmed-role-input');
+  const roles  = [...inputs].map(inp => inp.value.trim()).filter(Boolean);
+
+  if (!roles.length) {
+    showPopup('Please add at least one role so My Genie knows where to place your experiences.');
+    return;
+  }
+
+  state.cvRoles = roles;
+  loadSkillsQuestions();
+  showScreen('screen-5');
+  setProgress(75);
+}
 
 // ─── CV FILE UPLOAD ───
 async function handleCVFile(event) {
   const file = event.target.files[0];
   if (!file) return;
+
   const zone   = document.getElementById('cv-upload-zone');
   const label  = document.getElementById('cv-upload-label');
   const status = document.getElementById('cv-parse-status');
-  const cvText = document.getElementById('cv-text');
+
   label.textContent = file.name;
   zone.classList.add('has-file');
   status.style.display = 'block';
   status.style.color   = '#7a7669';
   status.textContent   = 'Reading your file…';
+
   try {
-    let text = '';
-    if (file.type === 'text/plain') {
-      text = await readAsText(file);
+    let extractedText = '';
+
+    if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+      extractedText = await readAsText(file);
     } else if (file.name.endsWith('.docx')) {
-      text = await extractDocx(file);
+      extractedText = await extractDocx(file);
     } else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-      text = await extractPdf(file);
+      extractedText = await extractPdfClean(file);
     } else {
-      text = await readAsText(file);
+      extractedText = await readAsText(file);
     }
-    if (text.trim()) {
-      cvText.value = text.trim();
-      status.textContent = '✓ CV loaded. Review the text below and edit if anything looks off.';
+
+    if (!extractedText.trim()) throw new Error('empty');
+
+    // Store the full text for the AI prompt later
+    document.getElementById('cv-text').value = extractedText;
+
+    status.textContent = 'Scanning for roles…';
+
+    // Use AI to extract roles cleanly
+    const roles = await extractRolesViaAI(extractedText);
+
+    if (roles && roles.length) {
+      state.cvRoles = roles;
+      status.textContent = `✓ Found ${roles.length} role${roles.length > 1 ? 's' : ''}. Continue to confirm them.`;
       status.style.color = '#2e7d32';
-    } else { throw new Error('empty'); }
+    } else {
+      status.textContent = '✓ CV loaded. You\'ll confirm your roles on the next screen.';
+      status.style.color = '#2e7d32';
+      state.cvRoles = [];
+    }
+
   } catch (err) {
-    status.textContent = 'Could not read this file automatically. Please paste your CV text below instead.';
+    console.error(err);
+    status.textContent = 'Could not read this file. Try the "Paste instead" option below.';
     status.style.color = '#c0392b';
     zone.classList.remove('has-file');
     label.textContent = 'Click to upload your CV';
   }
 }
+
+async function extractRolesViaAI(cvText) {
+  try {
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 600,
+        messages: [{
+          role: 'user',
+          content: `Extract all job roles from this CV. Return ONLY a JSON array of strings, where each string is in the format "Job Title, Company Name". Include every role, including volunteer and project roles if they have a clear title and organisation. Do not include education entries. Do not add any explanation or text outside the JSON array.
+
+Example output format:
+["Consulting Associate, Zitere Social Enterprise", "Junior Consultant, Kimani Advisory Africa", "Team Lead, University of Lagos"]
+
+CV TEXT:
+${cvText.slice(0, 8000)}`
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content?.map(b => b.text || '').join('') || '';
+
+    // Parse the JSON array from the response
+    const match = text.match(/\[[\s\S]*\]/);
+    if (match) {
+      const parsed = JSON.parse(match[0]);
+      if (Array.isArray(parsed)) return parsed.filter(r => typeof r === 'string' && r.trim());
+    }
+    return [];
+  } catch (e) {
+    console.error('Role extraction failed:', e);
+    return [];
+  }
+}
+
+async function extractRolesFromPastedText(cvText) {
+  const status = document.getElementById('paste-extract-status');
+  if (status) { status.style.display = 'block'; status.textContent = 'Scanning for roles…'; }
+  const roles = await extractRolesViaAI(cvText);
+  if (status) status.style.display = 'none';
+  return roles;
+}
+
+function toggleCVPaste() {
+  const area   = document.getElementById('cv-paste-area');
+  const toggle = document.getElementById('cv-paste-toggle');
+  const isOpen = area.style.display !== 'none';
+  area.style.display   = isOpen ? 'none' : 'block';
+  toggle.textContent   = isOpen ? 'Can\'t upload? Paste your CV text instead' : 'Hide paste area';
+  if (!isOpen) {
+    setTimeout(() => document.getElementById('cv-text-paste')?.focus(), 50);
+  }
+}
+
+function syncPasteToHidden(value) {
+  document.getElementById('cv-text').value = value;
+}
+
 function readAsText(file) {
   return new Promise((res, rej) => { const r = new FileReader(); r.onload = e => res(e.target.result); r.onerror = rej; r.readAsText(file); });
 }
@@ -1793,18 +2057,37 @@ async function extractDocx(file) {
   const result = await mammoth.extractRawText({ arrayBuffer: ab });
   return result.value;
 }
-async function extractPdf(file) {
+async function extractPdfClean(file) {
+  // Use PDF.js but with better text ordering — sort items by vertical position first
   await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   const ab  = await readAsArrayBuffer(file);
   const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
-  let text  = '';
+  let allText = '';
   for (let i = 1; i <= pdf.numPages; i++) {
     const page    = await pdf.getPage(i);
     const content = await page.getTextContent();
-    text += content.items.map(item => item.str).join(' ') + '\n';
+    // Sort items top-to-bottom, left-to-right
+    const sorted = content.items.sort((a, b) => {
+      const yDiff = Math.round(b.transform[5]) - Math.round(a.transform[5]);
+      return yDiff !== 0 ? yDiff : a.transform[4] - b.transform[4];
+    });
+    // Group into lines by Y position
+    let lastY = null;
+    let line  = '';
+    sorted.forEach(item => {
+      const y = Math.round(item.transform[5]);
+      if (lastY !== null && Math.abs(y - lastY) > 3) {
+        allText += line.trim() + '\n';
+        line = '';
+      }
+      line  += item.str + ' ';
+      lastY  = y;
+    });
+    if (line.trim()) allText += line.trim() + '\n';
+    allText += '\n';
   }
-  return text;
+  return allText;
 }
 function loadScript(src) {
   return new Promise((res, rej) => {
@@ -1977,7 +2260,12 @@ function extractRolesForDropdown() {
 }
 
 function loadSkillsQuestions() {
-  extractRolesForDropdown();
+  // Only auto-extract roles if we're on the no-CV path.
+  // For the CV path, state.cvRoles is already set by proceedFromRoleConfirmation — don't overwrite it.
+  if (state.path !== 'has-cv') {
+    extractRolesForDropdown();
+  }
+
   const questions = SKILLS_QUESTIONS[state.role] || [];
   const container = document.getElementById('yn-questions-container');
   container.innerHTML = '';
