@@ -1968,38 +1968,49 @@ async function handleCVFile(event) {
   }
 }
 
-// Parse roles from CV text by looking for lines followed by bullet points
+// Parse roles from CV text
 function parseRolesFromText(text) {
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 3);
   const roles = [];
-  const bulletPattern = /^[•\-\*·▪]/;
-  const skipPattern = /^(education|work experience|experience|skills|achievements|summary|certifications|additional|languages|interests|profile|references|projects|@|http|linkedin|\d{4})/i;
-  const datePattern = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|june|july|august|september|october|november|december)\b|\b\d{4}\b/i;
 
-  for (let i = 0; i < lines.length - 1; i++) {
-    const line    = lines[i];
-    const next    = lines[i + 1] || '';
-    const nextnext = lines[i + 2] || '';
+  const skipPattern = /^(education|work experience|experience|skills|achievements|summary|certifications|additional|languages|interests|profile|references|projects|publications|volunteering|awards)/i;
+  const bulletPattern = /^[•\-\*·▪–]/;
+  const emailPattern = /@|www\.|http|linkedin/i;
 
-    // Skip section headings, bullets, short lines, lines that are just dates
-    if (skipPattern.test(line)) continue;
-    if (bulletPattern.test(line)) continue;
-    if (line.length < 5 || line.length > 90) continue;
+  // Strategy 1: lines with role keywords
+  const roleKeywords = /\b(manager|analyst|consultant|associate|director|officer|coordinator|specialist|executive|lead|head|intern|engineer|advisor|founder|partner|assistant|strategist|developer|designer|researcher|planner)\b/i;
 
-    // A role line is typically followed by a bullet point within the next 2 lines
-    const nextIsBullet = bulletPattern.test(next) || bulletPattern.test(nextnext);
-    // Or the line contains a job-title word
-    const hasRoleWord = /\b(manager|analyst|consultant|associate|director|officer|coordinator|specialist|executive|lead|head|intern|engineer|advisor|founder|partner|assistant)\b/i.test(line);
+  lines.forEach((line, i) => {
+    if (skipPattern.test(line)) return;
+    if (bulletPattern.test(line)) return;
+    if (emailPattern.test(line)) return;
+    if (line.length > 100) return;
 
-    if (nextIsBullet || hasRoleWord) {
-      // Clean trailing dates from the line
-      const clean = line.replace(/\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\s,]+\d{4}.*/i, '')
-                        .replace(/\s+\d{4}\s*[-–—].*$/, '')
-                        .replace(/\s+[-–—]\s+\d{4}.*$/, '')
-                        .trim();
-      if (clean.length > 4 && !datePattern.test(clean.replace(/[a-z]/gi, ''))) {
+    if (roleKeywords.test(line)) {
+      const clean = line
+        .replace(/\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\s,]+\d{4}.*/i, '')
+        .replace(/\s+\d{4}\s*[-–—]\s*(\d{4}|present).*/i, '')
+        .replace(/\s+[-–—]\s+\d{4}.*$/, '')
+        .trim();
+      if (clean.length > 4 && clean.length < 90) {
         roles.push(clean);
       }
+    }
+  });
+
+  // Strategy 2: lines followed by bullet points
+  for (let i = 0; i < lines.length - 1; i++) {
+    const line = lines[i];
+    const next = lines[i + 1] || '';
+    if (skipPattern.test(line) || bulletPattern.test(line) || emailPattern.test(line)) continue;
+    if (line.length < 5 || line.length > 90) continue;
+
+    if (bulletPattern.test(next)) {
+      const clean = line
+        .replace(/\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\s,]+\d{4}.*/i, '')
+        .replace(/\s+\d{4}\s*[-–—]\s*(\d{4}|present).*/i, '')
+        .trim();
+      if (clean.length > 4) roles.push(clean);
     }
   }
 
@@ -2593,7 +2604,7 @@ function showPopup(message) {
 
 // ─── CENTRAL API CALL — Gemini Free Tier ───
 const GEMINI_KEY = 'AIzaSyD8PJ_4RSIKJu5feLr1blD5omKGJ53AP_8';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
 
 async function callAI(promptText, maxTokens) {
   const response = await fetch(GEMINI_URL, {
